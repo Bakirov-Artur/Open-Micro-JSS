@@ -37,9 +37,9 @@ package com.ericdaugherty.mail.server.info;
 //Java imports
 import java.io.File;
 
-//Log imports
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
+//Log4j2 imports
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 //Local imports
 import com.ericdaugherty.mail.server.configuration.ConfigurationManager;
@@ -67,7 +67,7 @@ public class User {
     private ConfigurationManager configurationManager = null;
 
     /** Logger */
-    private Log log = LogFactory.getLog( this.getClass() );
+    private static final Logger logger = LogManager.getLogger(User.class.getName());
 
     //***************************************************************
     // Constructor
@@ -110,9 +110,9 @@ public class User {
      */
     public boolean isPasswordValid( String plainTextPassword )
     {
-        if( log.isDebugEnabled() ) log.debug( "Authenticating User: " + getFullUsername() );
+        if( logger.isDebugEnabled() ) logger.debug( "Authenticating User: " + getFullUsername() );
         boolean result = getPassword().equals( PasswordManager.encryptPassword( plainTextPassword ) );
-        if( log.isDebugEnabled() && !result ) log.debug( "Authentication Failed for User: " + getFullUsername() );
+        if( logger.isDebugEnabled() && !result ) logger.debug( "Authentication Failed for User: " + getFullUsername() );
 
         return result;
     }
@@ -159,6 +159,7 @@ public class User {
     /**
      * Returns an array of Message objects that represents all messaged
      * stored for this user.
+     * @return 
      */
     public Message[] getMessages() {
         
@@ -183,17 +184,18 @@ public class User {
     }
     
     /**
-     * Gets the specified message.  Message numbers are 1 based.  
-     * This method counts on the calling method to verify that the
-     * messageNumber actually exists.
+     * Gets the specified message.Message numbers are 1 based.This method counts on the calling method to verify that the
+ messageNumber actually exists.
+     * @param messageNumber
+     * @return
      */
     public Message getMessage( int messageNumber ) {
-        
         return getMessages()[messageNumber - 1];
     }
          
     /**
      * Gets the total number of messages currently stored for this user.
+     * @return 
      */
     public long getNumberOfMessage() {
         
@@ -202,6 +204,7 @@ public class User {
     
     /**
      * Gets the total size of the messages currently stored for this user.
+     * @return 
      */
     public long getSizeOfAllMessage() {
         
@@ -209,16 +212,17 @@ public class User {
         
         long totalSize = 0;
         
-        for ( int index = 0; index < message.length; index++) {
-            totalSize += message[index].getMessageLocation().length();
+        for (Message message1 : message) {
+            totalSize += message1.getMessageLocation().length();
         }
         
         return totalSize;
     }
     
     /**
-     * Gets the user's directory as a file.  This method also verifies
-     * that that directory exists.
+     * Gets the user's directory as a file.This method also verifies
+ that that directory exists.
+     * @return 
      */
     public File getUserDirectory() {
 
@@ -226,12 +230,12 @@ public class User {
         File directory = new File( mailDirectory + File.separator + "users" + File.separator + getFullUsername() );
 
         if ( !directory.exists() ) { 
-            if( log.isInfoEnabled() ) log.info( "Directory for user: " + getFullUsername() + "does not exist, creating..." );
+            if( logger.isInfoEnabled() ) logger.info( "Directory for user: " + getFullUsername() + "does not exist, creating..." );
             directory.mkdirs();
         }
 
         if( !directory.isDirectory() ) {
-            log.error( "User Directory: " + directory.getAbsolutePath() + " for user: " + getFullUsername() + " does not exist." );
+            logger.error( "User Directory: " + directory.getAbsolutePath() + " for user: " + getFullUsername() + " does not exist." );
             throw new RuntimeException( "User's Directory path: " + directory.getAbsolutePath() + " is not a directory!" );
         }
         

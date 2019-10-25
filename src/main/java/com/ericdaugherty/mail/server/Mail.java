@@ -40,9 +40,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 
-//Log4j imports
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+//Log4j2 imports
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 //Local imports
 import com.ericdaugherty.mail.server.configuration.ConfigurationManager;
@@ -80,7 +80,7 @@ public class Mail {
 
     /** Logger Category for this class.  This variable is initialized once
      * the main logging system has been initialized */
-    private static Log log = null;
+    private static final Logger logger = LogManager.getLogger(Mail.class.getName());
 
     //***************************************************************
     // Public Interface
@@ -94,7 +94,7 @@ public class Mail {
      * @param args
      */
     public static void shutdown( String[] args ) {
-        log.debug( "NT Service requested application shutdown." );
+        logger.debug( "NT Service requested application shutdown." );
         shutdown();
     }
 
@@ -105,7 +105,7 @@ public class Mail {
      */
     public static void shutdown() {
 
-        log.warn( "Shutting down Mail Server.  Server will shut down in 60 seconds." );
+        logger.warn( "Shutting down Mail Server.  Server will shut down in 60 seconds." );
 
         popListener.shutdown();
         smtpListener.shutdown();
@@ -116,10 +116,10 @@ public class Mail {
         }
         catch (InterruptedException ie)
         {
-            log.error("Was interrupted while waiting for thread to die");
+            logger.error("Was interrupted while waiting for thread to die");
         }
 
-        log.info("Thread gracefully terminated");
+        logger.info("Thread gracefully terminated");
         smtpSenderThread = null;
     }
 
@@ -154,13 +154,13 @@ public class Mail {
 
             //Start the Pop3 Thread.
             port = configurationManager.getPop3Port();
-            if( log.isDebugEnabled() ) log.debug( "Starting POP3 Service on port: " + port );
+            if(logger.isDebugEnabled() ) logger.debug( "Starting POP3 Service on port: " + port );
             popListener = new ServiceListener( port, Pop3Processor.class, executeThreads );
             new Thread( popListener, "POP3" ).start();
 
             //Start SMTP Threads.
             port = configurationManager.getSmtpPort();
-            if( log.isDebugEnabled() ) log.debug( "Starting SMTP Service on port: " + port );
+            if( logger.isDebugEnabled() ) logger.debug( "Starting SMTP Service on port: " + port );
             smtpListener = new ServiceListener( port, SMTPProcessor.class, executeThreads );
             new Thread( smtpListener, "SMTP" ).start();
 
@@ -178,7 +178,6 @@ public class Mail {
         catch( RuntimeException runtimeException ) {
             System.err.println( "The application failed to initialize." );
             System.err.println( runtimeException.getMessage() );
-            runtimeException.printStackTrace();
             System.exit( 0 );
         }
     }
@@ -223,7 +222,7 @@ public class Mail {
      */
     private static void initializeLogging( String configurationDirectory ) {
 
-        File logConfigurationFile = new File( configurationDirectory, "log.conf" );
+        File logConfigurationFile = new File( configurationDirectory, "logger.conf" );
 
         if( !logConfigurationFile.exists() ) {
             initializeDefaultLogging( logConfigurationFile );
@@ -241,10 +240,7 @@ public class Mail {
                 // Invoke the method using the config file we verified.
                 configureMethod.invoke( null, new Object[] { logConfigurationFile.getAbsolutePath() } );
 
-                log = LogFactory.getLog( Mail.class );
-
-                log.info( "Logger using log4j.");
-
+                logger.info( "Logger using log4j.");
                 // log4j is successfully configured.
                 enableLog4j = true;
             }
@@ -283,7 +279,7 @@ public class Mail {
         String DEFAULT_THRESHOLD = "info";
         String threshold = DEFAULT_THRESHOLD;
 
-        // See if the default threshold is defined in the log.conf file.
+        // See if the default threshold is defined in the logger.conf file.
         if( logConfigurationFile.exists() ) {
 
             try {
@@ -306,8 +302,7 @@ public class Mail {
 
         // commons-logging will default to a logging configuration.
         // see http://jakarta.apache.org/commons/logging/api/org/apache/commons/logging/package-summary.html
-        System.setProperty( "org.apache.commons.logging.simplelog.defaultlog", threshold );
-        log = LogFactory.getLog( Mail.class );
-        log.warn( "log.conf file not found.  Using default log configuration.");
+        System.setProperty( "org.apache.commons.logging.simplelogger.defaultlog", threshold );
+        logger.warn( "logger.conf file not found.  Using default log configuration.");
     }
 }

@@ -39,14 +39,15 @@ import java.net.*;
 import java.io.*;
 
 //Log imports
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 //Local imports
 import com.ericdaugherty.mail.server.info.*;
 import com.ericdaugherty.mail.server.services.general.DeliveryService;
 import com.ericdaugherty.mail.server.services.general.ConnectionProcessor;
 import com.ericdaugherty.mail.server.configuration.ConfigurationManager;
+
 
 /**
  * Handles an incoming Pop3 connection.  See rfc 1939 for details.
@@ -60,7 +61,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
     //***************************************************************
 
     /** Logger Category for this class. */
-    private static Log log = LogFactory.getLog( Pop3Processor.class.getName() );
+    private static final Logger logger = LogManager.getLogger(Pop3Processor.class.getName());
 
     /** The ConfigurationManager */
     private static ConfigurationManager configurationManager = ConfigurationManager.getInstance();
@@ -91,7 +92,9 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
 
     /**
      * Sets the socket used to communicate with the client.
+     * @param serverSocket
      */
+    @Override
     public void setSocket( ServerSocket serverSocket ) {
 
         this.serverSocket = serverSocket;
@@ -101,6 +104,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
      * Entrypoint for the Thread, this method handles the interaction with
      * the client socket.
      */
+    @Override
     public void run() {
 
         try {
@@ -109,7 +113,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
             serverSocket.setSoTimeout( 1000 );
         }
         catch( SocketException se ) {
-            log.fatal( "Error initializing Socket Timeout in Pop3Processor" );
+            logger.fatal( "Error initializing Socket Timeout in Pop3Processor" );
         }
 
         while( running ) {
@@ -122,7 +126,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
 
                 InetAddress remoteAddress = socket.getInetAddress();
                 clientIp = remoteAddress.getHostAddress();
-                if( log.isInfoEnabled() ) { log.info( remoteAddress.getHostName() + "(" + clientIp + ") socket connected via POP3." ); }
+                if( logger.isInfoEnabled() ) { logger.info( remoteAddress.getHostName() + "(" + clientIp + ") socket connected via POP3." ); }
 
                 //Output the welcome message.
                 write( WELCOME_MESSAGE );
@@ -140,8 +144,8 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
             }
             //If any exception gets to here uncaught, it means we should just disconnect.
             catch( Throwable e ) {
-                log.debug( "Disconnecting Exception:", e );
-                log.info( "Disconnecting" );
+                logger.debug( "Disconnecting Exception:", e );
+                logger.info( "Disconnecting" );
 
                 //Unlock the user's mailbox
                 if( user != null ) {
@@ -153,7 +157,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
                     write( MESSAGE_DISCONNECT );
                 }
                 catch( Exception e1 ) {
-                    log.debug( "Error sending disconnect message.", e1 );
+                    logger.debug( "Error sending disconnect message.", e1 );
                     //Nothing to do.
                 }
                 try {
@@ -162,19 +166,20 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
                     }
                 }
                 catch( IOException ioe ) {
-                    log.debug( "Error disconnecting.", ioe );
+                    logger.debug( "Error disconnecting.", ioe );
                     //Nothing to do.
                 }
             }
         }
-        log.warn( "Pop3Processor shut down gracefully" );
+        logger.warn( "Pop3Processor shut down gracefully" );
     }
 
     /**
      * Notifies this thread to stop processing and exit.
      */
+    @Override
     public void shutdown() {
-        log.warn( "Shutting down Pop3Processor." );
+        logger.warn( "Shutting down Pop3Processor." );
         running = false;
     }
 
@@ -190,7 +195,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
     private void checkQuit( String command ) {
 
         if( command.equals( COMMAND_QUIT ) ) {
-            log.debug( "User has QUIT the session." );
+            logger.debug( "User has QUIT the session." );
 
             //Delete the messages marked as deleted from disk
             if( user != null ) {
@@ -309,14 +314,14 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
             deliveryService.ipAuthenticated( clientIp );
             deliveryService.lockMailbox( address );
             write( MESSAGE_LOGIN_SUCCESSFUL );
-            if( log.isInfoEnabled() ) log.info( "User: " + address.getAddress() + " logged in successfully.");
+            if( logger.isInfoEnabled() ) logger.info( "User: " + address.getAddress() + " logged in successfully.");
             return user;
         }
         else
         {
             //The login failed, display a message to the user and disconnect.
             write( MESSAGE_INVALID_LOGIN + username );
-            log.info( "Login failed for user: " + username + "@" + domain );
+            logger.info( "Login failed for user: " + username + "@" + domain );
             throw new RuntimeException();
         }
     }
@@ -436,9 +441,9 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
 
         long numMessages = user.getNumberOfMessage();
 
-        if( log.isDebugEnabled() ) {
-            log.debug( "Is Msg Deleted: " + user.getMessage( messageNumber ).isDeleted() );
-            log.debug( "Message: " + messageNumber + " of " + numMessages );
+        if( logger.isDebugEnabled() ) {
+            logger.debug( "Is Msg Deleted: " + user.getMessage( messageNumber ).isDeleted() );
+            logger.debug( "Message: " + messageNumber + " of " + numMessages );
         }
         if( messageNumber > numMessages || user.getMessage( messageNumber ).isDeleted() ) {
             write( MESSAGE_NO_SUCH_MESSAGE );
@@ -461,10 +466,10 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
             write( "." );
         }
         catch( FileNotFoundException fnfe ) {
-            log.error( "Requested message for user " + user.getFullUsername() + " could not be found on disk.", fnfe );
+            logger.error( "Requested message for user " + user.getFullUsername() + " could not be found on disk.", fnfe );
         }
         catch( IOException ioe ) {
-            log.error( "Error retrieving message.", ioe );
+            logger.error( "Error retrieving message.", ioe );
             write( "-ERR Error retrieving message" );
         }
         finally {
@@ -531,7 +536,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
 	 */
 	private void handleTop( String argument ) {
 
-		log.debug( "In Top" );
+		logger.debug( "In Top" );
 
 		int messageNumber = 0;
 		int numLines = 0;
@@ -555,9 +560,9 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
 
         long numMessages = user.getNumberOfMessage();
 
-        if( log.isDebugEnabled() ) {
-            log.debug( "Is Msg Deleted: " + user.getMessage( messageNumber ).isDeleted() );
-            log.debug( "Message: " + messageNumber + " of " + numMessages );
+        if( logger.isDebugEnabled() ) {
+            logger.debug( "Is Msg Deleted: " + user.getMessage( messageNumber ).isDeleted() );
+            logger.debug( "Message: " + messageNumber + " of " + numMessages );
         }
         if( messageNumber > numMessages || user.getMessage( messageNumber ).isDeleted() ) {
             write( MESSAGE_NO_SUCH_MESSAGE );
@@ -594,10 +599,10 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
             write( "." );
         }
         catch( FileNotFoundException fnfe ) {
-            log.error( "Requested message for user " + user.getFullUsername() + " could not be found on disk.", fnfe );
+            logger.error( "Requested message for user " + user.getFullUsername() + " could not be found on disk.", fnfe );
         }
         catch( IOException ioe ) {
-            log.error( "Error retrieving message.", ioe );
+            logger.error( "Error retrieving message.", ioe );
             write( "-ERR Error retrieving message" );
         }
         finally {
@@ -668,13 +673,13 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
         try {
             String inputLine = in.readLine().trim();
             //Log the input, unless it is a password.
-            if( log.isDebugEnabled() && !inputLine.startsWith( "PASS" ) ) {
-                log.debug( "Read Input: " + inputLine );
+            if( logger.isDebugEnabled() && !inputLine.startsWith( "PASS" ) ) {
+                logger.debug( "Read Input: " + inputLine );
             }
             return inputLine;
         }
         catch( IOException ioe ) {
-            log.error( "Error reading from socket.", ioe );
+            logger.error( "Error reading from socket.", ioe );
             throw new RuntimeException();
         }
     }
@@ -683,7 +688,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
      * Writes the specified output message to the client.
      */
     private void write( String message ) {
-        if( log.isDebugEnabled() ) { log.debug( "Writing Output: " + message ); }
+        if( logger.isDebugEnabled() ) { logger.debug( "Writing Output: " + message ); }
         out.print( message + "\r\n" );
         out.flush();
     }

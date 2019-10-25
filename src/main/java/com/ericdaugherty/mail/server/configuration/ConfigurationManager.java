@@ -48,8 +48,9 @@ import java.io.FileOutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
+//Log4j2 imports
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import com.ericdaugherty.mail.server.info.User;
 import com.ericdaugherty.mail.server.info.EmailAddress;
 import com.ericdaugherty.mail.server.errors.InvalidAddressException;
@@ -76,13 +77,13 @@ public class ConfigurationManager implements ConfigurationParameterContants {
     private static ConfigurationManager instance;
 
     /** The file reference to the mail.conf configuration file */
-    private File generalConfigurationFile;
+    private final File generalConfigurationFile;
 
     /** The timestamp for the mail.conf file when it was last loaded */
     private long generalConfigurationFileTimestamp;
 
     /** The file reference to the user.conf configuration file */
-    private File userConfigurationFile;
+    private final File userConfigurationFile;
 
     /** The timestamp for the user.conf file when it was last loaded */
     private long userConfigurationFileTimestamp;
@@ -91,7 +92,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
     private boolean userConfModified = false;
 
     /** Logger */
-    private Log log = LogFactory.getLog( this.getClass() );
+    private final Logger logger = LogManager.getLogger(ConfigurationManager.class.getName());
 
     //
     // Configuration Properties
@@ -273,7 +274,8 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         return deliveryAttemptThreshold;
     }
 
-    /** The maximum size (in megabytes) allowed for email attachments. */
+    /** The maximum size (in megabytes) allowed for email attachments.
+     * @return  */
     public int getMaximumMessageSize() {
         return maximumMessageSize;
     }
@@ -402,67 +404,79 @@ public class ConfigurationManager implements ConfigurationParameterContants {
     public User getUser( EmailAddress address )
     {
         User user = (User) users.get( address.getAddress() );
-        if( log.isInfoEnabled() && user == null ) log.info( "Tried to load non-existent user: " +  address.getAddress() );
+        if( logger.isInfoEnabled() && user == null ) logger.info( "Tried to load non-existent user: " +  address.getAddress() );
 
         return user;
     }
 
-    /** The timeout length for authenticated ip addresses */
+    /** The timeout length for authenticated ip addresses
+     * @return  */
     public long getAuthenticationTimeoutMilliseconds() {
         return authenticationTimeoutMilliseconds;
     }
 
-    /** The timeout length for authenticated ip addresses */
+    /** The timeout length for authenticated ip addresses
+     * @param minutes */
     public void setAuthenticationTimeoutMinutes(long minutes) {
         this.authenticationTimeoutMilliseconds = minutes * 60 * 1000;
     }
 
-    /** True if POP Before SMTP is a valid relay option */
+    /** True if POP Before SMTP is a valid relay option
+     * @return  */
     public boolean isEnablePOPBeforeSMTP() {
         return enablePOPBeforeSMTP;
     }
 
-    /** True if POP Before SMTP is a valid relay option */
+    /** True if POP Before SMTP is a valid relay option
+     * @param enablePOPBeforeSMTP */
     public void setEnablePOPBeforeSMTP(boolean enablePOPBeforeSMTP) {
         this.enablePOPBeforeSMTP = enablePOPBeforeSMTP;
     }
 
-    /** IP Addresses that are allowed to relay mail. */
+    /** IP Addresses that are allowed to relay mail.
+     * @return  */
     public String[] getRelayApprovedIpAddresses() {
         return relayApprovedIpAddresses;
     }
 
-    /** IP Addresses that are allowed to relay mail. */
+    /** IP Addresses that are allowed to relay mail.
+     * @param relayApprovedIpAddresses */
     public void setRelayApprovedIpAddresses(String[] relayApprovedIpAddresses) {
         this.relayApprovedIpAddresses = relayApprovedIpAddresses;
     }
 
-    /** Email Addresses that are allowed to relay mail. */
+    /** Email Addresses that are allowed to relay mail.
+     * @return  */
     public String[] getRelayApprovedEmailAddresses() {
         return relayApprovedEmailAddresses;
     }
 
-    /** Emails Addresses that are allowed to relay mail. */
+    /** Emails Addresses that are allowed to relay mail.
+     * @param relayApprovedEmailAddresses */
     public void setRelayApprovedEmailAddresses(String[] relayApprovedEmailAddresses) {
         this.relayApprovedEmailAddresses = relayApprovedEmailAddresses;
     }
 
-    /** True if all outgoing mail should go though the default server */
+    /** True if all outgoing mail should go though the default server
+     * @return  */
     public boolean isDefaultSmtpServerEnabled() {
         return defaultSmtpServerEnabled;
     }
 
-    /** True if all outgoing mail should go though the default server */
+    /** True if all outgoing mail should go though the default server
+     * @param defaultSmtpServerEnabled */
     public void setDefaultSmtpServerEnabled(boolean defaultSmtpServerEnabled) {
         this.defaultSmtpServerEnabled = defaultSmtpServerEnabled;
     }
 
-    /** The servers to send all outoing mail through */
+    /** The servers to send all outoing mail through
+     * @return  */
     public DefaultSmtpServer[] getDefaultSmtpServers() {
         return defaultSmtpServers;
     }
 
-    /** The server to send all outoing mail through */
+    /** The server to send all outoing mail through
+     * @param defaultSmtpServers */
     public void setDefaultSmtpServers(DefaultSmtpServer[] defaultSmtpServers) {
         this.defaultSmtpServers = defaultSmtpServers;
     }
@@ -483,18 +497,21 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         this.defaultUser = defaultUser;
     }
 
-    /** The number of seconds to wait between delivery attempts */
+    /** The number of seconds to wait between delivery attempts
+     * @return  */
     public long getDeliveryIntervalSeconds() {
         return deliveryIntervalSeconds;
     }
 
-    /** The number of milliseconds to wait between delivery attempts */
+    /** The number of milliseconds to wait between delivery attempts
+     * @return  */
     public long getDeliveryIntervealMilliseconds()
     {
         return deliveryIntervalSeconds * 1000;
     }
 
-    /** The number of seconds to wait between delivery attempts */
+    /** The number of seconds to wait between delivery attempts
+     * @param deliveryIntervalSeconds */
     public void setDeliveryIntervalSeconds(long deliveryIntervalSeconds) {
         this.deliveryIntervalSeconds = deliveryIntervalSeconds;
     }
@@ -506,6 +523,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
      * Loads the properties file into the local variables for quick
      * access.
      */
+    @SuppressWarnings("empty-statement")
     private void loadGeneralProperties()
     {
         Properties properties = new Properties();
@@ -526,7 +544,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
 
         String domains = properties.getProperty( DOMAINS, "" );
         localDomains = tokenize( domains.trim().toLowerCase() );
-        log.info( "Loaded " + localDomains.length + " local domains." );
+        logger.info( "Loaded " + localDomains.length + " local domains." );
         if( domains.length() == 0 )
         {
             throw new RuntimeException( "No Local Domains defined!  Can not run without local domains defined." );
@@ -542,7 +560,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
             executeThreadCount = Integer.parseInt( threadsString );
         }
         catch( NumberFormatException nfe ) {
-            log.warn( "Invalid value for property: " + EXECUTE_THREADS + ".  Using default value of 5.");
+            logger.warn( "Invalid value for property: " + EXECUTE_THREADS + ".  Using default value of 5.");
             executeThreadCount = 5;
         }
 
@@ -578,14 +596,14 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         //
         // Load the SMTP Delivery Parameters
 
-        enablePOPBeforeSMTP = Boolean.valueOf( properties.getProperty( RELAY_POP_BEFORE_SMTP, "false" ) ).booleanValue();
+        enablePOPBeforeSMTP = Boolean.parseBoolean(properties.getProperty( RELAY_POP_BEFORE_SMTP, "false" ));
         // Initialize the timeout Minutes parameter
         String timoutString = properties.getProperty( RELAY_POP_BEFORE_SMTP_TIMEOUT, "10" );
         try {
             setAuthenticationTimeoutMinutes( Long.parseLong( timoutString ) );
         }
         catch( NumberFormatException nfe ) {
-            log.warn( "Invalid value for property: " + RELAY_POP_BEFORE_SMTP_TIMEOUT + ". Defaulting to 10." );
+            logger.warn( "Invalid value for property: " + RELAY_POP_BEFORE_SMTP_TIMEOUT + ". Defaulting to 10." );
             //Set the default to 10 minutes.
             setAuthenticationTimeoutMinutes( 10 );
         }
@@ -678,7 +696,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         }
         catch( NumberFormatException numberFormatException )
         {
-            log.warn( "Invalid value for property: " + SMTP_DELIVERY_THRESHOLD + ". Defaulting to 10." );
+            logger.warn( "Invalid value for property: " + SMTP_DELIVERY_THRESHOLD + ". Defaulting to 10." );
             deliveryAttemptThreshold = 10;
         }
 
@@ -689,7 +707,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         }
         catch( NumberFormatException numberFormatException )
         {
-            log.warn( "Invalid value for property: " + SMTP_MAX_MESSAGE_SIZE + ". Defaulting to 5." );
+            logger.warn( "Invalid value for property: " + SMTP_MAX_MESSAGE_SIZE + ". Defaulting to 5." );
             deliveryAttemptThreshold = 5;
         }
 
@@ -720,7 +738,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         // Load the users
         //
 
-        Map users = new HashMap();
+        Map usersMap = new HashMap();
         Enumeration propertyKeys = properties.keys();
         String key;
         String fullUsername;
@@ -733,16 +751,16 @@ public class ConfigurationManager implements ConfigurationParameterContants {
                 fullUsername = key.substring( USER_DEF_PREFIX.length() );
                 correctedUsername = fullUsername.toLowerCase();
                 try {
-                    users.put( correctedUsername, loadUser( fullUsername, properties ) );
+                    usersMap.put( correctedUsername, loadUser( fullUsername, properties ) );
                 }
                 catch (InvalidAddressException e) {
-                    log.warn( "Skipping user: " + fullUsername + ".  Address is invalid." );
+                    logger.warn( "Skipping user: " + fullUsername + ".  Address is invalid." );
                 }
             }
         }
-        this.users = users;
+        this.users = usersMap;
 
-        if( log.isInfoEnabled() ) log.info( "Loaded " + users.size() + " users from user.conf" );
+        if( logger.isInfoEnabled() ) logger.info( "Loaded " + usersMap.size() + " users from user.conf" );
 
         // Save the user configuration if they changed.
         if( userConfModified ) {
@@ -750,10 +768,10 @@ public class ConfigurationManager implements ConfigurationParameterContants {
                 FileOutputStream out = new FileOutputStream( userConfigurationFile );
                 //properties.store( out, "Java Email Server (JES) User Configuration");
                 properties.store( out, USER_PROPERTIES_HEADER );
-                log.info( "Changes to user.conf persisted to disk." );
+                logger.info( "Changes to user.conf persisted to disk." );
             }
             catch (IOException e) {
-                log.error( "Unable to store changes to user.conf!  Plain text passwords were not hashed!" );
+                logger.error( "Unable to store changes to user.conf!  Plain text passwords were not hashed!" );
             }
         }
 
@@ -803,7 +821,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
                 value = Integer.parseInt( stringValue );
             }
             catch (NumberFormatException e) {
-                log.warn( "Error parsing port string: " + stringValue + " using default value: " + defaultValue );
+                logger.warn( "Error parsing port string: " + stringValue + " using default value: " + defaultValue );
             }
         }
         return value;
@@ -829,7 +847,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
             password = PasswordManager.encryptPassword( password );
             properties.setProperty( USER_DEF_PREFIX + fullAddress, password );
             if( password == null ) {
-                log.error( "Error encrypting plaintext password from user.conf for user " + fullAddress );
+                logger.error( "Error encrypting plaintext password from user.conf for user " + fullAddress );
                 throw new RuntimeException( "Error encrypting password for user: " + fullAddress );
             }
             userConfModified = true;
@@ -844,19 +862,18 @@ public class ConfigurationManager implements ConfigurationParameterContants {
             forwardAddresses = tokenize( forwardAddressesString );
         }
         ArrayList addressList = new ArrayList( forwardAddresses.length );
-        for( int index = 0; index < forwardAddresses.length; index++ ) {
+        for (String forwardAddresse : forwardAddresses) {
             try {
-                addressList.add( new EmailAddress( forwardAddresses[index] ) );
-            }
-            catch (InvalidAddressException e) {
-                log.warn( "Forward address: " + forwardAddresses[index] + " for user " + user.getFullUsername() + " is invalid and will be ignored." );
+                addressList.add(new EmailAddress(forwardAddresse));
+            } catch (InvalidAddressException e) {
+                logger.warn("Forward address: " + forwardAddresse + " for user " + user.getFullUsername() + " is invalid and will be ignored.");
             }
         }
 
         EmailAddress[] emailAddresses = new EmailAddress[ addressList.size() ];
         emailAddresses = (EmailAddress[]) addressList.toArray( emailAddresses );
 
-        if( log.isDebugEnabled() ) log.debug( emailAddresses.length + " forward addresses load for user: " + user.getFullUsername() );
+        if( logger.isDebugEnabled() ) logger.debug( emailAddresses.length + " forward addresses load for user: " + user.getFullUsername() );
         user.setForwardAddresses( emailAddresses );
 
         return user;
@@ -883,6 +900,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
          * Check the timestamp on the file to see
          * if it has been updated.
          */
+        @Override
         public void run() {
             long sleepTime = 10 * 1000;
             while( true )
@@ -890,16 +908,16 @@ public class ConfigurationManager implements ConfigurationParameterContants {
                 try {
                     Thread.sleep( sleepTime );
                     if( generalConfigurationFile.lastModified() > generalConfigurationFileTimestamp ) {
-                        log.info( "General Configuration File Changed, reloading..." );
+                        logger.info( "General Configuration File Changed, reloading..." );
                         loadGeneralProperties();
                     }
                     if( userConfigurationFile.lastModified() > userConfigurationFileTimestamp ) {
-                        log.info( "User Configuration File Changed, reloading..." );
+                        logger.info( "User Configuration File Changed, reloading..." );
                         loadUserProperties();
                     }
                 }
-                catch( Throwable throwable ) {
-                    log.error( "Error in ConfigurationWatcher thread.  Thread will continue to execute. " + throwable, throwable );
+                catch( InterruptedException throwable ) {
+                    logger.error( "Error in ConfigurationWatcher thread.  Thread will continue to execute. " + throwable, throwable );
                 }
             }
         }

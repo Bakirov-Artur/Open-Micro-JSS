@@ -37,9 +37,9 @@ package com.ericdaugherty.mail.server.info;
 //Java imports
 import java.io.File;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
+//Log4j2 imports
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * Simple bean class that represents a POP3 Message used in the User class
@@ -54,7 +54,7 @@ public class Message {
     //***************************************************************
 
     /** Logger Category for this class. */
-    private static Log log = LogFactory.getLog( Message.class );
+    private static final Logger logger = LogManager.getLogger(Message.class.getName());
 
     private File messageLocation;
     private boolean deleted = false;
@@ -74,7 +74,7 @@ public class Message {
 
     public boolean isDeleted(){ return deleted; }
 
-    public void setDeleted(boolean deleted){ log.debug( "Setting is deleted to: " + deleted ); this.deleted = deleted; }
+    public void setDeleted(boolean deleted){ logger.debug( "Setting is deleted to: " + deleted ); this.deleted = deleted; }
 	
 	public String getUniqueId() { 
 		String location = messageLocation.getAbsolutePath();

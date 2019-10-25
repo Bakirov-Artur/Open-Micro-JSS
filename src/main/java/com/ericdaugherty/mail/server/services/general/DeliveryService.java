@@ -37,9 +37,9 @@ package com.ericdaugherty.mail.server.services.general;
 //Java imports
 import java.util.*;
 
-//Log imports
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
+//Log4j2 imports
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 //Local imports
 import com.ericdaugherty.mail.server.info.EmailAddress;
@@ -57,18 +57,18 @@ public class DeliveryService implements ConfigurationParameterContants {
     //***************************************************************
 
     /** Logger Category for this class. */
-    private Log log = LogFactory.getLog( this.getClass() );
+    private static final Logger logger = LogManager.getLogger(DeliveryService.class.getName());
 
     /** Singleton Instance */
     private static DeliveryService instance = null;
 
-    private ConfigurationManager configurationManager;
+    private final ConfigurationManager configurationManager;
 
     /** The IP Addresses that have logged into the POP3 server recently */
-    private Hashtable authenticatedIps;
+    private final Hashtable authenticatedIps;
 
     /** The mailboxes that are currently locked */
-    private Hashtable lockedMailboxes;
+    private final Hashtable lockedMailboxes;
 
     //***************************************************************
     // Public Interface
@@ -95,6 +95,7 @@ public class DeliveryService implements ConfigurationParameterContants {
 
     /**
      * Accessor for the singleton instance for this class.
+     * @return 
      */
     public static synchronized DeliveryService getDeliveryService(){
         if ( instance == null ) {
@@ -107,6 +108,8 @@ public class DeliveryService implements ConfigurationParameterContants {
     /**
      * Determines if the domain for the specified email address is hosted
      * locally in this mail server.
+     * @param address
+     * @return 
      */
     public boolean isLocalAddress( EmailAddress address ) {
 
@@ -115,6 +118,7 @@ public class DeliveryService implements ConfigurationParameterContants {
 
     /**
      * Checks an address to see if we should accept it for delivery.
+     * @return 
      */
     public boolean acceptAddress( EmailAddress address, String clientIp, EmailAddress clientFromAddress ) {
 
@@ -133,15 +137,17 @@ public class DeliveryService implements ConfigurationParameterContants {
 
     /**
      * This method should be called whenever a client authenticates themselves.
+     * @param clientIp
      */
     public void ipAuthenticated( String clientIp ) {
-        if( log.isDebugEnabled() ) log.debug( "Adding authenticated IP address: " + clientIp );
+        if( logger.isDebugEnabled() ) logger.debug( "Adding authenticated IP address: " + clientIp );
         authenticatedIps.put( clientIp, new Date() );
     }
 
     /**
      * This method locks a mailbox so that two clients can not access the same mailbox
      * at the same time.
+     * @param address
      */
     public void lockMailbox( EmailAddress address ) {
         lockedMailboxes.put( address.getAddress(), "" );
@@ -149,17 +155,20 @@ public class DeliveryService implements ConfigurationParameterContants {
 
     /**
      * Checks to see if a user currently has the specified mailbox locked.
+     * @param address
+     * @return 
      */
     public boolean isMailboxLocked( EmailAddress address ) {
-        if( log.isDebugEnabled() ) log.debug( "Locking Mailbox: " + address.getAddress() );
+        if( logger.isDebugEnabled() ) logger.debug( "Locking Mailbox: " + address.getAddress() );
         return lockedMailboxes.containsKey( address.getAddress() );
     }
 
     /**
      * Unlocks an mailbox.
+     * @param address
      */
     public void unlockMailbox( EmailAddress address ) {
-        if( log.isDebugEnabled() ) log.debug( "Unlocking Mailbox: " + address.getAddress() );
+        if( logger.isDebugEnabled() ) logger.debug( "Unlocking Mailbox: " + address.getAddress() );
         lockedMailboxes.remove( address.getAddress() );
     }
     
@@ -208,8 +217,8 @@ public class DeliveryService implements ConfigurationParameterContants {
     private boolean isRelayApproved( String clientIp, String[] approvedAddresses ) {
 
         String approvedAddress;
-        for( int index = 0; index < approvedAddresses.length; index++ ) {
-            approvedAddress = approvedAddresses[index];
+        for (String approvedAddresse : approvedAddresses) {
+            approvedAddress = approvedAddresse;
             // Check for an exact match.
             if( clientIp.equals( approvedAddress ) ) {
                 return true;
@@ -234,7 +243,7 @@ public class DeliveryService implements ConfigurationParameterContants {
                             }
                         }
                         catch (NoSuchElementException noSuchElementException) {
-                            log.warn( "Invalid ApprovedAddress found: " + approvedAddress + ".  Skipping." );
+                            logger.warn( "Invalid ApprovedAddress found: " + approvedAddress + ".  Skipping." );
                             isMatch = false;
                             break;
                         }
@@ -258,9 +267,8 @@ public class DeliveryService implements ConfigurationParameterContants {
     private boolean isRelayApprovedForEmail( EmailAddress clientFromEmail, String[] approvedEmailAddresses ) {
 
         String approvedEmailAddress;
-        for( int index = 0; index < approvedEmailAddresses.length; index++ ) {
-            approvedEmailAddress = approvedEmailAddresses[index].trim();
-
+        for (String approvedEmailAddresse : approvedEmailAddresses) {
+            approvedEmailAddress = approvedEmailAddresse.trim();
             // Check for an exact match (case insensitive).
             if( clientFromEmail.getAddress().equalsIgnoreCase( approvedEmailAddress ) ) {
                 return true;

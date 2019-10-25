@@ -35,8 +35,8 @@
 package com.ericdaugherty.mail.server;
 
 //Log imports
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 /**
  * This thread runs when the JVM is shutdown.
@@ -46,22 +46,22 @@ import org.apache.commons.logging.Log;
 public class ShutdownService implements Runnable {
 
     /** Logger */
-    private Log log = LogFactory.getLog( this.getClass() );
-
+    private final Logger logger = LogManager.getLogger(ShutdownService.class.getName());
     /**
      * Runs when the JVM is shutdown.  Stops all threads gracefully.
      */
+    @Override
     public void run() {
 
-        log.warn( "Server is shutting down." );
+        logger.warn( "Server is shutting down." );
 
         try {
             Mail.shutdown();
 
-            log.warn( "Server shutdown complete." );
+            logger.warn( "Server shutdown complete." );
         }
         catch (Exception e) {
-            log.error("Failed to terminate properly", e);
+            logger.error("Failed to terminate properly", e);
         }
     }
 }

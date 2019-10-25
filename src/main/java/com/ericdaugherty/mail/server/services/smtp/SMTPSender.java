@@ -41,8 +41,8 @@ import java.util.Vector;
 import java.util.List;
 
 //Log imports
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 //Local imports
 import com.ericdaugherty.mail.server.info.User;
@@ -65,10 +65,10 @@ public class SMTPSender implements Runnable {
     //***************************************************************
 
     /** Logger */
-    private static Log log = LogFactory.getLog( SMTPSender.class );
+    private static final Logger logger = LogManager.getLogger(SMTPSender.class.getName());
 
     /** The ConfigurationManager */
-    private static ConfigurationManager configurationManager = ConfigurationManager.getInstance();
+    private static final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
 
     private boolean running = true;
 
@@ -80,13 +80,14 @@ public class SMTPSender implements Runnable {
      * The entrypoint for this thread.  This method handles the lifecycle
      * of this thread.
      */
+    @Override
     public void run() {
 
         while( running ) {
 
             try {
 
-                log.debug( "Checking for SMTP messages to deliver" );
+                logger.debug( "Checking for SMTP messages to deliver" );
 
                 File smtpDirectory = new File( configurationManager.getMailDirectory() + File.separator + "smtp" );
 
@@ -100,7 +101,7 @@ public class SMTPSender implements Runnable {
                             deliver( SMTPMessage.load( files[index].getAbsolutePath() ) );
                         }
                         catch( Throwable throwable ) {
-                            log.error( "An error occured attempting to deliver an SMTP Message: " + throwable, throwable );
+                            logger.error( "An error occured attempting to deliver an SMTP Message: " + throwable, throwable );
                             //Do nothing else, contine on to the next message.
                         }
                     }
@@ -128,21 +129,21 @@ public class SMTPSender implements Runnable {
                 }
             }
             catch( InterruptedException ie ) {
-                log.error( "Sleeping Thread was interrupted." );
+                logger.error( "Sleeping Thread was interrupted." );
             }
             catch( Throwable throwable )
             {
-                log.error( "An error occured attempting to deliver an SMTP Message: " + throwable, throwable );
+                logger.error( "An error occured attempting to deliver an SMTP Message: " + throwable, throwable );
             }
         }
-        log.warn( "SMTPSender shut down gracefully.");
+        logger.warn( "SMTPSender shut down gracefully.");
     }
 
     /**
      * Notifies this thread to stop processing and exit.
      */
     public void shutdown() {
-        log.warn( "Attempting to shut down SMTPSender." );
+        logger.warn( "Attempting to shut down SMTPSender." );
         running = false;
     }
 
@@ -165,14 +166,14 @@ public class SMTPSender implements Runnable {
         // If the next scheduled delivery attempt is still in the future, skip.
         if( message.getScheduledDelivery().getTime() > System.currentTimeMillis() )
         {
-            if( log.isDebugEnabled() ) log.debug( "Skipping delivery of message " + message.getMessageLocation().getName() + " because the scheduled delivery time is still in the future: " + message.getScheduledDelivery() );
+            if( logger.isDebugEnabled() ) logger.debug( "Skipping delivery of message " + message.getMessageLocation().getName() + " because the scheduled delivery time is still in the future: " + message.getScheduledDelivery() );
             return;
         }
 
         for( int index = 0; index < numAddress; index++ ) {
             try {
                 address = (EmailAddress) toAddresses.get( index );
-                if( log.isDebugEnabled()) { log.debug( "Attempting to deliver message from: " + message.getFromAddress().getAddress() + " to: " + address ); }
+                if( logger.isDebugEnabled()) { logger.debug( "Attempting to deliver message from: " + message.getFromAddress().getAddress() + " to: " + address ); }
 
                 DeliveryService deliveryService = DeliveryService.getDeliveryService();
 
@@ -185,15 +186,15 @@ public class SMTPSender implements Runnable {
                     }
                 }
                 catch (NotFoundException e) {
-                    log.info( "Delivery attempted to unknown user: " + address.getAddress() );
+                    logger.info( "Delivery attempted to unknown user: " + address.getAddress() );
                     //The addressee does not exist.  Notify the sender of the error.
                     bounceMessage( address, message );
                 }
 
-                if( log.isInfoEnabled() ) { log.info( "Delivery complete for message " + message.getMessageLocation().getName() + " to: " + address ); }
+                if( logger.isInfoEnabled() ) { logger.info( "Delivery complete for message " + message.getMessageLocation().getName() + " to: " + address ); }
             }
             catch( Throwable throwable ) {
-                log.error( "Delivery failed for message from: " + message.getFromAddress().getAddress() + " to: " + address + " - " + throwable, throwable );
+                logger.error( "Delivery failed for message from: " + message.getFromAddress().getAddress() + " to: " + address + " - " + throwable, throwable );
                 failedAddress.addElement( toAddresses.get( index ) );
             }
         }
@@ -204,7 +205,7 @@ public class SMTPSender implements Runnable {
             // delivered again, but it is too late to roll back the delivery.
             if( !message.getMessageLocation().delete() )
             {
-                log.error( "Error removed SMTP message after delivery!  This message may be redelivered. " + message.getMessageLocation().getName() );
+                logger.error( "Error removed SMTP message after delivery!  This message may be redelivered. " + message.getMessageLocation().getName() );
             }
         }
         // Update the message with any changes.
@@ -218,11 +219,11 @@ public class SMTPSender implements Runnable {
             if(message.getFromAddress().getUsername().equalsIgnoreCase("MAILER_DAEMON"))
             {
                 try {
-                    log.info( "Delivery of message from MAILER_DAEMON failed, moving to failed folder." );
+                    logger.info( "Delivery of message from MAILER_DAEMON failed, moving to failed folder." );
                     message.moveToFailedFolder();
                 }
                 catch (Exception e) {
-                    log.error( "Unable to move failed message to 'failed' folder." );
+                    logger.error( "Unable to move failed message to 'failed' folder." );
                 }
             }
             // If we have not passed the maximum delivery count, calculate the
@@ -245,7 +246,7 @@ public class SMTPSender implements Runnable {
                     message.save();
                 }
                 catch( Exception exception ) {
-                    log.error( "Error updating spooled message for next delivery.  Message may be re-delivered.", exception );
+                    logger.error( "Error updating spooled message for next delivery.  Message may be re-delivered.", exception );
                 }
             }
             // All delivery attempts failed, bounce message.
@@ -258,14 +259,14 @@ public class SMTPSender implements Runnable {
                         bounceMessage(bounce_address, message);
                     }
                     catch(Exception e) {
-                        log.error( "Problem bouncing message. " + message.getMessageLocation().getName() );
+                        logger.error( "Problem bouncing message. " + message.getMessageLocation().getName() );
                     }
                 }
 
                 // Remove the original message.
                 if( !message.getMessageLocation().delete() )
                 {
-                    log.error( "Error removed SMTP message after bounce! This message may be re-bounced. " + message.getMessageLocation().getName() );
+                    logger.error( "Error removed SMTP message after bounce! This message may be re-bounced. " + message.getMessageLocation().getName() );
                 }
             }
         }
@@ -277,7 +278,7 @@ public class SMTPSender implements Runnable {
     private void deliverLocalMessage( EmailAddress address, SMTPMessage message )
         throws NotFoundException {
 
-        if( log.isDebugEnabled() ) { log.debug( "Delivering Message to local user: " + address.getAddress() ); }
+        if( logger.isDebugEnabled() ) { logger.debug( "Delivering Message to local user: " + address.getAddress() ); }
 
         User user = null;
         //Load the user.  If the user doesn't exist, a not found exception will
@@ -285,7 +286,7 @@ public class SMTPSender implements Runnable {
         user = configurationManager.getUser( address );
         if( user == null )
         {
-            log.debug( "User not found, checking for default delivery options" );
+            logger.debug( "User not found, checking for default delivery options" );
             //Check to see if a default delivery mailbox exists, and if so, deliver it.
             //Otherwise, just throw the NotFoundException to bounce the email.
             if( configurationManager.isDefaultUserEnabled() ) {
@@ -293,7 +294,7 @@ public class SMTPSender implements Runnable {
                 //If this throws a NotFoundException, go ahead and let it bounce.
                 user = configurationManager.getUser( defaultAddress );
                 if( user == null ) throw new NotFoundException();
-                if( log.isDebugEnabled() ) { log.info( "Delivering message addressed to: " + address + " to default user: " + defaultAddress ); }
+                if( logger.isDebugEnabled() ) { logger.info( "Delivering message addressed to: " + address + " to default user: " + defaultAddress ); }
             }
             else {
                 throw new NotFoundException( "User does not exist and no default delivery options found." );
@@ -308,10 +309,9 @@ public class SMTPSender implements Runnable {
         try {
 
             //Get the directory and create a new file.
-            File userDirectory = user.getUserDirectory();
-            messageFile = userDirectory.createTempFile("pop", ".jmsg", userDirectory );
+            messageFile = File.createTempFile("pop", ".jmsg", user.getUserDirectory() );
 
-            if( log.isDebugEnabled() ) { log.debug( "Delivering to: " + messageFile.getAbsolutePath() ); }
+            if( logger.isDebugEnabled() ) { logger.debug( "Delivering to: " + messageFile.getAbsolutePath() ); }
 
             //Open the output stream.
             out = new BufferedWriter( new FileWriter( messageFile ) );
@@ -331,7 +331,7 @@ public class SMTPSender implements Runnable {
             }
         }
         catch( IOException ioe ) {
-            log.error( "Error performing local delivery.", ioe );
+            logger.error( "Error performing local delivery.", ioe );
             if( messageFile != null ) {
                 //The message was not fully written, so delete it.
                 messageFile.delete();
@@ -344,7 +344,7 @@ public class SMTPSender implements Runnable {
                     out.close();
                 }
                 catch( IOException ioe ) {
-                    log.error( "Error closing output Stream.", ioe );
+                    logger.error( "Error closing output Stream.", ioe );
                 }
             }
         }
@@ -355,7 +355,7 @@ public class SMTPSender implements Runnable {
      */
     private void deliverRemoteMessage( EmailAddress address, SMTPMessage message ) throws NotFoundException {
 
-        if( log.isDebugEnabled() ) { log.debug( "Delivering Message to remote user: " + address ); }
+        if( logger.isDebugEnabled() ) { logger.debug( "Delivering Message to remote user: " + address ); }
 
         //Delegate this request to the SMTPRemoteSender class.
         new SMTPRemoteSender().sendMessage( address, message );
@@ -363,7 +363,7 @@ public class SMTPSender implements Runnable {
 
     private void bounceMessage( EmailAddress address, SMTPMessage message ) {
 
-        if( log.isInfoEnabled() ) { log.info( "Bouncing Messsage from " + message.getFromAddress().getAddress() + " to " + address.getAddress() ); }
+        if( logger.isInfoEnabled() ) { logger.info( "Bouncing Messsage from " + message.getFromAddress().getAddress() + " to " + address.getAddress() ); }
 
         SMTPMessage bounceMessage = new SMTPMessage();
 
@@ -396,7 +396,7 @@ public class SMTPSender implements Runnable {
             bounceMessage.save();
         }
         catch (Exception e) {
-            log.error( "Error storing outgoing 'bounce' email message");
+            logger.error( "Error storing outgoing 'bounce' email message");
             throw new RuntimeException();
         }
     }

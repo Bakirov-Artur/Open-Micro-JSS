@@ -40,8 +40,8 @@ import java.io.*;
 import java.util.*;
 
 //Log imports
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 //Local imports
 import com.ericdaugherty.mail.server.info.EmailAddress;
@@ -64,10 +64,10 @@ public class SMTPProcessor implements ConnectionProcessor {
     //***************************************************************
 
     /** Logger Category for this class. */
-    private static Log log = LogFactory.getLog( SMTPMessage.class.getName() );
+    private static final Logger logger = LogManager.getLogger(SMTPProcessor.class.getName());
 
     /** The ConfigurationManager */
-    private static ConfigurationManager configurationManager = ConfigurationManager.getInstance();
+    private static final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
 
     /** Indicates if this thread should continue to run or shut down */
     private boolean running = true;
@@ -96,7 +96,9 @@ public class SMTPProcessor implements ConnectionProcessor {
 
     /**
      * Sets the socket used to communicate with the client.
+     * @param serverSocket
      */
+    @Override
     public void setSocket( ServerSocket serverSocket ) {
 
         this.serverSocket = serverSocket;
@@ -107,6 +109,7 @@ public class SMTPProcessor implements ConnectionProcessor {
      * Entrypoint for the Thread, this method handles the interaction with
      * the client socket.
      */
+    @Override
     public void run() {
 
         try {
@@ -115,7 +118,7 @@ public class SMTPProcessor implements ConnectionProcessor {
             serverSocket.setSoTimeout( 10 * 1000 );
         }
         catch( SocketException se ) {
-            log.fatal( "Error initializing Socket Timeout in SMTPProcessor" );
+            logger.fatal( "Error initializing Socket Timeout in SMTPProcessor" );
         }
 
         while( running ) {
@@ -132,7 +135,7 @@ public class SMTPProcessor implements ConnectionProcessor {
                 InetAddress remoteAddress = socket.getInetAddress();
                 clientIp = remoteAddress.getHostAddress();
 
-				if( log.isInfoEnabled() ) { log.info( remoteAddress.getHostName() + "(" + clientIp + ") socket connected via SMTP." ); }
+				if( logger.isInfoEnabled() ) { logger.info( remoteAddress.getHostName() + "(" + clientIp + ") socket connected via SMTP." ); }
 
                 write( WELCOME_MESSAGE );
 
@@ -148,14 +151,14 @@ public class SMTPProcessor implements ConnectionProcessor {
                 //a connection is not made.
             }
             //If any exception gets to here uncaught, it means we should just disconnect.
-            catch( Throwable e ) {
-                log.debug( "Disconnecting Exception:", e );
-                log.info( "Disconnecting" );
+            catch( IOException e ) {
+                logger.debug( "Disconnecting Exception:", e );
+                logger.info( "Disconnecting" );
                 try {
                     write( MESSAGE_DISCONNECT );
                 }
                 catch( Exception e1 ) {
-                    log.debug( "Error sending disconnect message.", e1 );
+                    logger.debug( "Error sending disconnect message.", e1 );
                     //Nothing to do.
                 }
                 try {
@@ -164,19 +167,20 @@ public class SMTPProcessor implements ConnectionProcessor {
                     }
                 }
                 catch( IOException ioe ) {
-                    log.debug( "Error disconnecting.", ioe );
+                    logger.debug( "Error disconnecting.", ioe );
                     //Nothing to do.
                 }
             }
         }
-        log.warn( "SMTPProcessor shut down gracefully" );
+        logger.warn( "SMTPProcessor shut down gracefully" );
     }
 
     /**
      * Notifies this thread to stop processing and exit.
      */
+    @Override
     public void shutdown() {
-        log.warn( "Shutting down SMTPProcessor." );
+        logger.warn( "Shutting down SMTPProcessor." );
         running = false;
     }
 
@@ -191,7 +195,7 @@ public class SMTPProcessor implements ConnectionProcessor {
     private void checkQuit( String command ) {
 
         if( command.equals( COMMAND_QUIT ) ) {
-            log.debug( "User has QUIT the session." );
+            logger.debug( "User has QUIT the session." );
             throw new RuntimeException();
         }
     }
@@ -290,19 +294,19 @@ public class SMTPProcessor implements ConnectionProcessor {
             if( fromAddress == null || fromAddress.trim().equals( "" ) ) {
                 message.setFromAddress( new EmailAddress() );
                 message.setFromAddress( new EmailAddress("unknown@example.com") );
-                log.debug( "MAIL FROM is empty, using unknown@example.com" );
+                logger.debug( "MAIL FROM is empty, using unknown@example.com" );
             }
             //Although this is the normal case...
             else {
                 EmailAddress address = new EmailAddress( fromAddress );
                 message.setFromAddress( address );
-                if( log.isDebugEnabled() ) { log.debug( "MAIL FROM: " + fromAddress ); }
+                if( logger.isDebugEnabled() ) { logger.debug( "MAIL FROM: " + fromAddress ); }
             }
             write( MESSAGE_OK );
             return true;
         }
         catch( InvalidAddressException iae ) {
-            log.debug( "Unable to parse From Address: " + fromAddress );
+            logger.debug( "Unable to parse From Address: " + fromAddress );
             write( MESSAGE_USER_INVALID );
             return false;
         }
@@ -325,8 +329,8 @@ public class SMTPProcessor implements ConnectionProcessor {
                 User localUser = configurationManager.getUser( address );
                 if( localUser!= null ) {
                     EmailAddress[] addresses = localUser.getDeliveryAddresses();
-                    for( int index = 0; index < addresses.length; index++ ) {
-                        message.addToAddress( addresses[index] );
+                    for (EmailAddress addresse : addresses) {
+                        message.addToAddress(addresse);
                     }
                 }
                 // Otherwise, just add the address.
@@ -334,17 +338,16 @@ public class SMTPProcessor implements ConnectionProcessor {
                     message.addToAddress( address );
                 }
                 write( MESSAGE_OK );
-                if( log.isDebugEnabled() ) { log.debug( "RCTP TO: " + address.getAddress() + " accepted." ); }
+                if( logger.isDebugEnabled() ) { logger.debug( "RCTP TO: " + address.getAddress() + " accepted." ); }
             }
             else {
-                if( log.isInfoEnabled() ) log.info( "Invalid delivery address for incoming mail: " + toAddress + " from client: " + clientIp + " / " + message.getFromAddress() );
+                if( logger.isInfoEnabled() ) logger.info( "Invalid delivery address for incoming mail: " + toAddress + " from client: " + clientIp + " / " + message.getFromAddress() );
                 throw new InvalidAddressException();
             }
         }
         catch( InvalidAddressException iae ) {
             write( MESSAGE_USER_NOT_LOCAL );
-            log.debug( "RCTP TO: " + toAddress + " rejected." );
-            return;
+            logger.debug( "RCTP TO: " + toAddress + " rejected." );
         }
     }
 
@@ -367,22 +370,22 @@ public class SMTPProcessor implements ConnectionProcessor {
             String inputString = in.readLine();
 
             while( !inputString.equals( "." ) ) {
-                if( log.isDebugEnabled() ) { log.debug( "Read Data: " + inputString ); }
+                if( logger.isDebugEnabled() ) { logger.debug( "Read Data: " + inputString ); }
                 message.addDataLine( inputString );
                 inputString = in.readLine();
 
                 // Check message size
                 if( message.getSize() > maxSize )
                 {
-                    log.warn( "Message Rejected.  Message larger than max allowed size (" + configurationManager.getMaximumMessageSize() + " MB)" );
+                    logger.warn( "Message Rejected.  Message larger than max allowed size (" + configurationManager.getMaximumMessageSize() + " MB)" );
                     write( MESSAGE_MESSAGE_TOO_LARGE );
                     throw new RuntimeException( "Aborting Connection.  Message size too large." );
                 }
             }
-            log.debug( "Data Input Complete." );
+            logger.debug( "Data Input Complete." );
         }
         catch( IOException ioe ) {
-            log.error( "An error occured while retrieving the message data.", ioe );
+            logger.error( "An error occured while retrieving the message data.", ioe );
             throw new RuntimeException();
         }
 
@@ -397,7 +400,7 @@ public class SMTPProcessor implements ConnectionProcessor {
             throw new RuntimeException( se.getMessage() );
         }
 
-        if( log.isInfoEnabled() ) log.info( "Message " + message.getMessageLocation().getName() + " accepted for delivery." );
+        if( logger.isInfoEnabled() ) logger.info( "Message " + message.getMessageLocation().getName() + " accepted for delivery." );
     }
 
     /**
@@ -406,11 +409,11 @@ public class SMTPProcessor implements ConnectionProcessor {
     private String read() {
         try {
             String inputLine = in.readLine().trim();
-            if( log.isDebugEnabled() ) { log.debug( "Read Input: " + inputLine ); }
+            if( logger.isDebugEnabled() ) { logger.debug( "Read Input: " + inputLine ); }
             return inputLine;
         }
         catch( IOException ioe ) {
-            log.error( "Error reading from socket.", ioe );
+            logger.error( "Error reading from socket.", ioe );
             throw new RuntimeException();
         }
     }
@@ -420,7 +423,7 @@ public class SMTPProcessor implements ConnectionProcessor {
      */
     private void write( String message ) {
 
-		if( log.isDebugEnabled() ) { log.debug( "Writing: " + message ); }
+		if( logger.isDebugEnabled() ) { logger.debug( "Writing: " + message ); }
         out.print( message + "\r\n" );
         out.flush();
     }
@@ -515,14 +518,14 @@ public class SMTPProcessor implements ConnectionProcessor {
     private static final String COMMAND_RCPT_TO = "RCPT";
     private static final String COMMAND_DATA = "DATA";
 
-	//SMTP Commands
-	public int NONE = 0;
+    //SMTP Commands
+    public int NONE = 0;
     public int HELO = 1;
     public int QUIT = 2;
     public int MAIL_FROM = 3;
     public int RCPT_TO = 4;
     public int DATA = 5;
     public int DATA_FINISHED = 6;
-	public int RSET = 7;
-	public int EHLO = 8;
+    public int RSET = 7;
+    public int EHLO = 8;
 }

@@ -39,8 +39,8 @@ import java.net.*;
 import java.io.*;
 
 //Log4j imports
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import com.ericdaugherty.mail.server.configuration.ConfigurationManager;
 
 //Local imports
@@ -60,7 +60,7 @@ public class ServiceListener implements Runnable {
     //***************************************************************
 
     /** Logger Category for this class. */
-    private static Log log = LogFactory.getLog( ServiceListener.class.getName() );
+    private static final Logger logger = LogManager.getLogger(ServiceListener.class.getName());
 
     /** Array of processors */
     private ConnectionProcessor[] processors;
@@ -106,7 +106,7 @@ public class ServiceListener implements Runnable {
      */
     public void run() {
 
-        if( log.isDebugEnabled() ) log.debug( "Starting ServiceListener on port: " + port );
+        if( logger.isDebugEnabled() ) logger.debug( "Starting ServiceListener on port: " + port );
 
         InetAddress listenAddress = ConfigurationManager.getInstance().getListenAddress();
         try {
@@ -125,11 +125,11 @@ public class ServiceListener implements Runnable {
                 address = listenAddress.getHostAddress();
             }
 
-            log.error("Could not create ServiceListener on address: " + address + " port: " + port + ".  No connections will be accepted on this port!" );
+            logger.error("Could not create ServiceListener on address: " + address + " port: " + port + ".  No connections will be accepted on this port!" );
             return;
         }
 
-        log.info( "Accepting Connections on port: " + port );
+        logger.info( "Accepting Connections on port: " + port );
 
         ConnectionProcessor processor;
         long threadCount = 0;
@@ -153,9 +153,9 @@ public class ServiceListener implements Runnable {
                 threadPool[index].start();
             }
         }
-        catch (Exception e)
+        catch (IllegalAccessException | InstantiationException e)
         {
-            log.error("ServiceListener Connection failed on port: " + port + ".  Error: " + e );
+            logger.error("ServiceListener Connection failed on port: " + port + ".  Error: " + e );
         }
     }
 
@@ -172,21 +172,21 @@ public class ServiceListener implements Runnable {
             }
             catch (InterruptedException ie)
             {
-                log.error("Was interrupted while waiting for thread to die");
+                logger.error("Was interrupted while waiting for thread to die");
             }
 
-            log.info("Thread gracefully terminated");
+            logger.info("Thread gracefully terminated");
             threadPool[index] = null;
         }
 
         try
         {
             serverSocket.close();
-            log.info("Server socket succcessfully closed");
+            logger.info("Server socket succcessfully closed");
         }
-        catch(Exception e)
+        catch(IOException e)
         {
-            log.error( "Failed to  close server socket", e );
+            logger.error( "Failed to  close server socket", e );
         }
         serverSocket = null;
     }

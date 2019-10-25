@@ -40,9 +40,11 @@ import java.io.*;
 import java.util.*;
 
 //Log imports
+//Log4j2 imports
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
 
 //DNS imports
 import org.xbill.DNS.*;
@@ -65,10 +67,10 @@ public class SMTPRemoteSender {
     //***************************************************************
 
     /** Logger */
-    private static Log log = LogFactory.getLog( SMTPRemoteSender.class.getName() );
+    private static final Logger logger = LogManager.getLogger(SMTPRemoteSender.class.getName());
 
     /** ConfigurationManager */
-    private static ConfigurationManager configurationManager = ConfigurationManager.getInstance();
+    private static final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
 
     /** Writer to sent data to the client */
     private PrintWriter out;
@@ -96,6 +98,9 @@ public class SMTPRemoteSender {
 
     /**
      * Handles delivery of messages to addresses not handled by this server.
+     * @param address
+     * @param message
+     * @throws com.ericdaugherty.mail.server.errors.NotFoundException
      */
     public void sendMessage( EmailAddress address, SMTPMessage message ) throws NotFoundException, RuntimeException {
 
@@ -137,7 +142,7 @@ public class SMTPRemoteSender {
                     socket.close();
                 }
                 catch( IOException ioe ) {
-                    log.error( "Error closing socket: " + ioe );
+                    logger.error( "Error closing socket: " + ioe );
                 }
             }
         }
@@ -164,17 +169,15 @@ public class SMTPRemoteSender {
         if( configurationManager.isDefaultSmtpServerEnabled() )
         {
             DefaultSmtpServer[] defaultMXEntries = configurationManager.getDefaultSmtpServers();
-            for( int index = 0; index < defaultMXEntries.length; index++ ) {
-
-                DefaultSmtpServer mxEntry = defaultMXEntries[index];
+            for (DefaultSmtpServer mxEntry : defaultMXEntries) {
                 try {
                     socket = new Socket( mxEntry.getHost(), mxEntry.getPort() );
                     username = mxEntry.getUsername();
                     password = mxEntry.getPassword();
                     return socket;
                 }
-                catch( Exception e ) {
-                    log.debug( "Connection to SMTP Server: " + mxEntry + " failed with exception: " + e ) ;
+                catch( IOException e ) {
+                    logger.debug( "Connection to SMTP Server: " + mxEntry + " failed with exception: " + e ) ;
                 }
             }
         }
@@ -191,7 +194,7 @@ public class SMTPRemoteSender {
                 if( records == null )
                 {
                     records = new Record[0];
-                    log.warn( "DNS Lookup for domain: " + domain + " failed." );
+                    logger.warn( "DNS Lookup for domain: " + domain + " failed." );
                 }
 
                 // Convert the MX Entries to strings and sort them in order
@@ -202,8 +205,8 @@ public class SMTPRemoteSender {
                 int mxIndex = 0;
                 while( mxIndex < mxEntries.length )
                 {
-                    for (int i = 0; i < records.length; i++) {
-                        MXRecord mx = (MXRecord) records[i];
+                    for (Record record : records) {
+                        MXRecord mx = (MXRecord) record;
                         if( mx.getPriority() == priority )
                         {
                             mxEntries[mxIndex++] = mx.getTarget().toString();
@@ -236,7 +239,7 @@ public class SMTPRemoteSender {
                 try {
                     port = Integer.parseInt(mxEntry.substring(indexPort+1));
                 }
-                catch( Exception e ) {
+                catch( NumberFormatException e ) {
                     System.out.println("Invalid defaultsmtpserver port: "+mxEntry.substring(indexPort+1)+" - "+e);
                 }
                 if (indexPort==0) {
@@ -252,8 +255,8 @@ public class SMTPRemoteSender {
                 socket = new Socket( mxEntry, port );
                 return socket;
             }
-            catch( Exception e ) {
-                log.debug( "Connection to SMTP Server: " + mxEntries[index] + " failed with exception: " + e ) ;
+            catch( IOException e ) {
+                logger.debug( "Connection to SMTP Server: " + mxEntries[index] + " failed with exception: " + e ) ;
             }
         }
         throw new RuntimeException( "Could not connect to any SMTP server for domain: " + domain );
@@ -375,7 +378,7 @@ public class SMTPRemoteSender {
                 inputText = inputText.trim();
             }
 
-            if( log.isDebugEnabled() ) { log.debug( "Read Input: " + inputText ); }
+            if( logger.isDebugEnabled() ) { logger.debug( "Read Input: " + inputText ); }
             if( inputText.length() < 3 ) {
                 throw new RuntimeException( "SMTP Response too short. Aborting Send. Response: " + inputText );
             }
@@ -386,13 +389,13 @@ public class SMTPRemoteSender {
             //Handle Multi-Line Responses.
             while( ( inputText.length() >= 4 ) && inputText.substring( 3, 4 ).equals( "-" ) ) {
                 inputText = in.readLine().trim();
-                if( log.isDebugEnabled() ) { log.debug( "Read Input: " + inputText ); }
+                if( logger.isDebugEnabled() ) { logger.debug( "Read Input: " + inputText ); }
             }
 
             return responseCode;
         }
         catch( IOException ioe ) {
-            log.error( "Error reading from socket.", ioe );
+            logger.error( "Error reading from socket.", ioe );
             throw new RuntimeException();
         }
     }

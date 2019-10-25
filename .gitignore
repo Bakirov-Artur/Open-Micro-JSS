@@ -25,3 +25,6 @@ hs_err_pid*
 
 #Grdale
 .gradle/
+
+#Other
+.DS_Store

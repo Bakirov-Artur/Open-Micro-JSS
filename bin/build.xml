@@ -1,0 +1,173 @@
+<?xml version="1.0"?>
+
+<!--
+   | Copyright (c) 2003 Eric Daugherty.  All rights reserved.
+   |
+   | www.ericdaugherty.com/java/workspace
+   | java@ericdaugherty.com
+-->
+
+<project default="compile" basedir="..">
+
+
+    <property file="bin/build.properties" />
+
+<!--
+   | ************************************************************
+   |
+   | Classpaths
+   |
+   | ************************************************************
+-->
+
+    <!--
+       | The path to use to compile all Java files.
+    -->
+    <path id="classpath.compile.java.ref">
+        <fileset dir="${lib.dir}" >
+            <include name="**/*.jar" />
+            <include name="**/*.zip" />
+        </fileset >
+    </path>
+
+<!--
+   | ************************************************************
+   |
+   | Compile
+   |
+   | ************************************************************
+-->
+
+    <!--
+       | Compiles all Java files in this project.
+    -->
+    <target name="compile.java">
+        <mkdir dir="${build.java.dir}" />
+        <javac
+            srcdir="${src.java.dir}"
+            destdir="${build.java.dir}"
+            source="1.4"
+            target="1.4"
+            debug="true"
+        >
+            <classpath refid="classpath.compile.java.ref"/>
+        </javac>
+    </target>
+
+    <!--
+       | Compile all source files
+    -->
+    <target name="compile" depends="compile.java" />
+
+<!--
+   | ************************************************************
+   |
+   | Build
+   |
+   | ************************************************************
+-->
+    <target name="build.manifest">
+        <manifest file="${build.dir}/MANIFEST.MF">
+            <attribute name="Main-Class" value="com.ericdaugherty.mail.server.Mail" />
+            <attribute name="Implementation-Title" value="${name} Client" />
+            <attribute name="Implementation-Version" value="${version}" />
+        </manifest>
+    </target>
+
+    <target name="build" depends="compile, build.manifest">
+        <mkdir dir="${build.jar.dir}" />
+        <jar destfile="${build.jar.file}"
+             manifest="${build.dir}/MANIFEST.MF">
+            <fileset dir="${build.java.dir}" />
+        </jar>
+    </target>
+
+<!--
+   | ************************************************************
+   |
+   | Document
+   |
+   | ************************************************************
+-->
+
+    <!--
+       | Generates the Javadoc API documentation for the Java
+       | source files.
+    -->
+    <target name="javadoc">
+        <delete dir="${build.javadoc.dir}" />
+        <mkdir dir="${build.javadoc.dir}"/>
+        <javadoc sourcepath="${src.java.dir}"
+                 classpathref="classpath.compile.java.ref"
+                 packagenames="${javadoc.packages}"
+                 destdir="${build.javadoc.dir}"
+                 access="${javadoc.access}"
+                 author="true"
+                 version="true"
+                 use="true"
+                 windowtitle="${name} Client API"
+                 doctitle="Java Email Server (JES)"
+        >
+        </javadoc>
+    </target>
+
+<!--
+   | ************************************************************
+   |
+   | Release
+   |
+   | ************************************************************
+-->
+
+    <target name="release" depends="clean, build, javadoc">
+        <mkdir dir="${build.release.dir}" />
+        <mkdir dir="${build.release.dir}/lib" />
+        <copy file="${build.jar.file}" toDir="${build.release.dir}/lib" />
+        <zip destfile="${build.release.file}">
+            <fileset dir="${build.jar.dir}" includes="lib/**/*" />
+            <fileset dir="." includes="lib/**/*" />
+            <fileset dir="docs" />
+        </zip>
+        <zip destfile="${build.release-src.file}">
+            <fileset dir=".">
+                <exclude name="**/java_version.bat" />
+                <include name="bin/**/*"/>
+                <include name="docs/**/*" />
+                <include name="src/**/*" />
+            </fileset>
+            <fileset dir="${build.dir}" includes="docs/**" />
+        </zip>
+    </target>
+
+<!--
+   | ************************************************************
+   |
+   | Clean
+   |
+   | ************************************************************
+-->
+
+    <!--
+      | Remove all generated .class files
+    -->
+    <target name="clean.java">
+       <delete dir="${build.java.dir}"/>
+    </target>
+
+    <!--
+       | Remove the genrated Javadoc documentation.
+    -->
+    <target name="clean.javadoc">
+        <delete dir="${build.javadoc.dir}" />
+    </target>
+
+    <!--
+       | Deletes the entire build directory
+    -->
+    <target name="clean"
+            depends="clean.java,
+                     clean.javadoc">
+        <delete dir="${build.dir}" />
+    </target>
+
+</project>

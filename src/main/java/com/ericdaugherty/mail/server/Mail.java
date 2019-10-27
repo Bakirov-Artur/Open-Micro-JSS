@@ -36,17 +36,12 @@ package com.ericdaugherty.mail.server;
 
 //Java imports
 import java.io.*;
-import java.lang.reflect.Method;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Properties;
-
 //Log4j2 imports
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 //Local imports
 import com.ericdaugherty.mail.server.configuration.ConfigurationManager;
-import com.ericdaugherty.mail.server.configuration.ConfigurationParameterContants;
 import com.ericdaugherty.mail.server.services.general.ServiceListener;
 import com.ericdaugherty.mail.server.services.smtp.SMTPSender;
 import com.ericdaugherty.mail.server.services.smtp.SMTPProcessor;

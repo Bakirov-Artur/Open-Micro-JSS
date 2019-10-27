@@ -37,7 +37,6 @@ package com.ericdaugherty.mail.server.services.smtp;
 //Java imports
 import java.io.*;
 import java.util.Date;
-import java.util.Vector;
 import java.util.List;
 
 //Log imports
@@ -50,6 +49,7 @@ import com.ericdaugherty.mail.server.info.EmailAddress;
 import com.ericdaugherty.mail.server.errors.NotFoundException;
 import com.ericdaugherty.mail.server.services.general.DeliveryService;
 import com.ericdaugherty.mail.server.configuration.ConfigurationManager;
+import java.util.ArrayList;
 
 /**
  * This class (thread) is responsible for checking the disk for unsent message and
@@ -157,10 +157,8 @@ public class SMTPSender implements Runnable {
      * and does not perform any delivery rules.
      */
     private void deliver( SMTPMessage message ) {
-
         List toAddresses = message.getToAddresses();
-        int numAddress = toAddresses.size();
-        Vector failedAddress = new Vector();
+        List failedAddress = new ArrayList();
         EmailAddress address = null;
 
         // If the next scheduled delivery attempt is still in the future, skip.
@@ -169,8 +167,9 @@ public class SMTPSender implements Runnable {
             if( logger.isDebugEnabled() ) logger.debug( "Skipping delivery of message " + message.getMessageLocation().getName() + " because the scheduled delivery time is still in the future: " + message.getScheduledDelivery() );
             return;
         }
-
-        for( int index = 0; index < numAddress; index++ ) {
+        
+        int countRecipient = toAddresses.size();
+        for( int index = 0; index < countRecipient; index++ ) {
             try {
                 address = (EmailAddress) toAddresses.get( index );
                 if( logger.isDebugEnabled()) { logger.debug( "Attempting to deliver message from: " + message.getFromAddress().getAddress() + " to: " + address ); }
@@ -195,26 +194,16 @@ public class SMTPSender implements Runnable {
             }
             catch( Throwable throwable ) {
                 logger.error( "Delivery failed for message from: " + message.getFromAddress().getAddress() + " to: " + address + " - " + throwable, throwable );
-                failedAddress.addElement( toAddresses.get( index ) );
-            }
-        }
-
-        // If all addresses were successful, remove the message from the spool
-        if( failedAddress.size() == 0 ) {
-            // Log an error if the delete fails.  This will cause the message to get
-            // delivered again, but it is too late to roll back the delivery.
-            if( !message.getMessageLocation().delete() )
-            {
-                logger.error( "Error removed SMTP message after delivery!  This message may be redelivered. " + message.getMessageLocation().getName() );
+                failedAddress.add( toAddresses.get( index ) );
             }
         }
         // Update the message with any changes.
-        else {
-
+        if( !failedAddress.isEmpty()) {
+            
             message.setToAddresses( failedAddress );
             int deliveryAttempts = message.getDeliveryAttempts();
-
-
+            
+            
             // If the message is a bounced email, just give up and move it to the failed directory.
             if(message.getFromAddress().getUsername().equalsIgnoreCase("MAILER_DAEMON"))
             {
@@ -255,7 +244,7 @@ public class SMTPSender implements Runnable {
                 // Send a bounce message to all failed addresses.
                 for( int index = 0; index < failedAddress.size(); index++ ) {
                     try {
-                        EmailAddress bounce_address = (EmailAddress)( failedAddress.elementAt(index) );
+                        EmailAddress bounce_address = (EmailAddress)( failedAddress.get(index) );
                         bounceMessage(bounce_address, message);
                     }
                     catch(Exception e) {
@@ -270,6 +259,15 @@ public class SMTPSender implements Runnable {
                 }
             }
         }
+        // If all addresses were successful, remove the message from the spool
+        else {
+            // Log an error if the delete fails.  This will cause the message to get
+            // delivered again, but it is too late to roll back the delivery.
+            if( !message.getMessageLocation().delete() )
+            {
+                logger.error( "Error removed SMTP message after delivery!  This message may be redelivered. " + message.getMessageLocation().getName() );
+            }
+        }
     }
 
     /**
@@ -279,11 +277,9 @@ public class SMTPSender implements Runnable {
         throws NotFoundException {
 
         if( logger.isDebugEnabled() ) { logger.debug( "Delivering Message to local user: " + address.getAddress() ); }
-
-        User user = null;
         //Load the user.  If the user doesn't exist, a not found exception will
         //be thrown and the deliver() message will deal with the notification.
-        user = configurationManager.getUser( address );
+        User user = configurationManager.getUser( address );
         if( user == null )
         {
             logger.debug( "User not found, checking for default delivery options" );

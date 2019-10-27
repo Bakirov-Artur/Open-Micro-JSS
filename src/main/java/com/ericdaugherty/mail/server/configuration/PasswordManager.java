@@ -68,7 +68,7 @@ public class PasswordManager {
             
             //Convert the byte array into a String
             
-            StringBuffer hashStringBuf = new StringBuffer();
+            StringBuilder hashStringBuf = new StringBuilder();
             String byteString;
             int byteLength;
             

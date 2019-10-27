@@ -36,11 +36,11 @@ package com.ericdaugherty.mail.server.configuration;
 
 import java.util.Properties;
 import java.util.StringTokenizer;
-import java.util.Vector;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.List;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.File;
@@ -789,20 +789,15 @@ public class ConfigurationManager implements ConfigurationParameterContants {
      * @return a String[] of the values, or an empty array if the key could not be found.
      */
     public static String[] tokenize( String value ) {
-
-        if( value == null || value.trim().equals( "" ) ) {
-            return new String[0];
-        }
-        else {
-            StringTokenizer stringTokenizer = new StringTokenizer( value, "," );
-            Vector tokenVector = new Vector();
-            while( stringTokenizer.hasMoreTokens() ) {
-                tokenVector.addElement( stringTokenizer.nextToken().trim() );
+        if( value != null && !value.isBlank() ) {
+            List<String> tokens = new ArrayList<>();
+            StringTokenizer tokenizer = new StringTokenizer(value, ",");
+            while (tokenizer.hasMoreElements()) {
+                tokens.add(tokenizer.nextToken());
             }
-
-            String[] values = new String[ tokenVector.size() ];
-            return (String[]) tokenVector.toArray( values );
+            return  tokens.toArray(new String[tokens.size()]);
         }
+        return new String[0];
     }
 
     /**

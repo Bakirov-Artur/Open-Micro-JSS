@@ -64,7 +64,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
     private static final Logger logger = LogManager.getLogger(Pop3Processor.class.getName());
 
     /** The ConfigurationManager */
-    private static ConfigurationManager configurationManager = ConfigurationManager.getInstance();
+    private static final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
 
     /** Indicates if this thread should continue to run or shut down */
     private boolean running = true;

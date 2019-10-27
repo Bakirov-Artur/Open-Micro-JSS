@@ -176,8 +176,8 @@ public class Mail {
             Runtime.getRuntime().addShutdownHook( shutdownServiceThread );
         }
         catch( RuntimeException runtimeException ) {
-            System.err.println( "The application failed to initialize." );
-            System.err.println( runtimeException.getMessage() );
+            logger.error("The application failed to initialize." );
+            logger.error( runtimeException.getMessage() );
             System.exit( 0 );
         }
     }

@@ -47,6 +47,7 @@ public interface ConnectionProcessor extends Runnable {
     
     /**
      * Sets the socket used to communicate with the client.
+     * @param serverSocket
      */
     public void setSocket( ServerSocket serverSocket );
 

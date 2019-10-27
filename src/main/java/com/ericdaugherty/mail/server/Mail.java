@@ -141,10 +141,6 @@ public class Mail {
             // Get the 'root' directory for the mail server.
             String directory = getConfigurationDirectory( args );
 
-            // Initialize the logging mechanism.  We want to do this before we do
-            // anything else.
-            initializeLogging( directory );
-
             // Initialize the Configuration Manager.
             ConfigurationManager configurationManager = ConfigurationManager.initialize( directory );
 
@@ -213,96 +209,5 @@ public class Mail {
         }
 
         return directory;
-    }
-    
-    /**
-     * This method is responsible for initialzing the logging mechanism used 
-     * by this application.  All required information is loaded from the
-     * configuration file.
-     */
-    private static void initializeLogging( String configurationDirectory ) {
-
-        File logConfigurationFile = new File( configurationDirectory, "logger.conf" );
-
-        if( !logConfigurationFile.exists() ) {
-            initializeDefaultLogging( logConfigurationFile );
-        }
-        else
-        {
-            boolean enableLog4j = false;
-            try
-            {
-                // Get a reference to the org.apache.log4j.PropertyConfigurator.configureAndWatch( String filename )
-                // method.
-                Class propertyConfigurator = Class.forName("org.apache.log4j.PropertyConfigurator");
-                Method configureMethod = propertyConfigurator.getMethod( "configureAndWatch", new Class[] { String.class } );
-
-                // Invoke the method using the config file we verified.
-                configureMethod.invoke( null, new Object[] { logConfigurationFile.getAbsolutePath() } );
-
-                logger.info( "Logger using log4j.");
-                // log4j is successfully configured.
-                enableLog4j = true;
-            }
-            catch( ClassNotFoundException classNotFoundException )
-            {
-                // log4j is not available.
-            }
-            catch( NoSuchMethodException noSuchMethodException ) {
-                // log4j is not available.
-                System.err.println( "Found log4j Class but method configureAndWatch(String) is not available." );
-            }
-            catch( IllegalAccessException illegalAccessException ) {
-                // log4j is not available.
-                System.err.println( "Found log4j Class but method configureAndWatch(String) caused an IllegalAccessException." );
-            }
-            catch( InvocationTargetException invocationTargetException ) {
-                Throwable targetException = invocationTargetException.getTargetException();
-                System.err.println( "Error occured while configuring log4j: " + targetException );
-            }
-
-            // If log4j was not configured, initialize the default logger.
-            if( !enableLog4j ) {
-                initializeDefaultLogging( logConfigurationFile );
-            }
-        }
-    }
-
-    /**
-     * Initializes the logger with the default configuration if no log file is found.
-     *
-     * @param logConfigurationFile the file that may contain properties
-     * to use to configure the default logger.
-     */
-    private static void initializeDefaultLogging( File logConfigurationFile ) {
-
-        String DEFAULT_THRESHOLD = "info";
-        String threshold = DEFAULT_THRESHOLD;
-
-        // See if the default threshold is defined in the logger.conf file.
-        if( logConfigurationFile.exists() ) {
-
-            try {
-                Properties logConfigurationProperties = new Properties();
-                logConfigurationProperties.load( new FileInputStream( logConfigurationFile ) );
-
-                threshold = logConfigurationProperties.getProperty( ConfigurationParameterContants.LOGGING_DEFAULT_THRESHOLD, DEFAULT_THRESHOLD );
-                threshold = threshold.trim();
-                if( !threshold.equals( "debug" ) && !threshold.equals( "info" ) && !threshold.equals( "warn" ) &&
-                    !threshold.equals( "error" ) && !threshold.equals( "fatal" ) ) {
-                    System.err.println( "Invalid value for property " + ConfigurationParameterContants.LOGGING_DEFAULT_THRESHOLD + ": " + threshold );
-                    threshold = DEFAULT_THRESHOLD;
-                }
-            }
-            catch (IOException ioException) {
-                System.err.println( "Error loading properties from: " + logConfigurationFile.getAbsolutePath() + ". " + ioException );
-                threshold = DEFAULT_THRESHOLD;
-            }
-        }
-
-        // commons-logging will default to a logging configuration.
-        // see http://jakarta.apache.org/commons/logging/api/org/apache/commons/logging/package-summary.html
-        System.setProperty( "org.apache.commons.logging.simplelogger.defaultlog", threshold );
-        logger.warn( "logger.conf file not found.  Using default log configuration.");
     }
 }

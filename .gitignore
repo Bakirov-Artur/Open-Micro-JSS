@@ -29,4 +29,5 @@ hs_err_pid*
 #Other
 .DS_Store
 *.jmsg
+conf/users
 conf/users/*

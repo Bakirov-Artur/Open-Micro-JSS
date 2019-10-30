@@ -45,7 +45,7 @@ import com.ericdaugherty.mail.server.errors.InvalidAddressException;
  * class performs conversions between a full email address, and a username
  * and domain.
  */
-public class EmailAddress implements Serializable {
+public final class EmailAddress implements Serializable {
 
     //***************************************************************
     // Public Interface
@@ -59,22 +59,23 @@ public class EmailAddress implements Serializable {
      * SMTP messages that have no MAIL FROM address.
      */
     public EmailAddress() {
-
-       _isEmpty = true;
     }
 
     /**
      * Creates a new instance of this class using a single string
      * that contains the full email address (joe@mydomain.com).
+     * @param fullAddress
+     * @throws com.ericdaugherty.mail.server.errors.InvalidAddressException
      */
     public EmailAddress( String fullAddress ) throws InvalidAddressException {
-
        setFullAddress( fullAddress );
     }
 
     /**
      * Creates a new instance of this class using a username string
      * and an address string.
+     * @param username
+     * @param domain
      */
     public EmailAddress( String username, String domain ) {
         setUsername( username );
@@ -84,6 +85,7 @@ public class EmailAddress implements Serializable {
     /**
      * Override tostring to return the full address
      */
+    @Override
     public String toString() {
         return getAddress();
     }
@@ -92,31 +94,25 @@ public class EmailAddress implements Serializable {
     //JavaBean Methods
 
     public String getUsername(){
-        if( _isEmpty ) {
-            return "";
-        }
-        else {
+        if( ! _username.isEmpty() ) {
             return _username;
         }
+        return "";
     }
 
     public void setUsername(String username) {
-        _isEmpty = false;
-        _username = username.trim().toLowerCase();
+        if (! username.isEmpty()) _username = username.trim().toLowerCase();
     }
 
     public String getDomain(){
-        if( _isEmpty ) {
-            return "";
-        }
-        else {
+        if( ! _domain.isEmpty() ) {
             return _domain;
         }
+        return "";    
     }
 
     public void setDomain(String domain){
-        _isEmpty = false;
-        _domain = domain.trim().toLowerCase();
+        if (! domain.isEmpty()) _domain = domain.trim().toLowerCase();
     }
 
     public String getAddress() {
@@ -135,17 +131,10 @@ public class EmailAddress implements Serializable {
      * Combines a username and domain into a single email address.
      */
     private String getFullAddress( String username, String domain ) {
-
-        if( _isEmpty ) {
-            return "";
+        if( ! username.isEmpty() && ! domain.isEmpty() ) {
+            return new StringBuffer(username).append("@").append(domain).toString();
         }
-        else {
-            StringBuffer fullAddress = new StringBuffer( username );
-            fullAddress.append( "@" );
-            fullAddress.append( domain );
-
-            return fullAddress.toString();
-        }
+        return "";
     }
 
     /**
@@ -154,23 +143,19 @@ public class EmailAddress implements Serializable {
     private void setFullAddress( String fullAddress ) throws InvalidAddressException {
 
         //Parse toAddress into username and domain.
-        int index = fullAddress.indexOf( "@" );
-        if( index == -1 ) {
-            throw new InvalidAddressException();
+        String[] emailAddress = fullAddress.split("@");
+        if(emailAddress.length == 2){
+            setUsername( emailAddress[0] );
+            setDomain( emailAddress[1] );
         }
-
-        setUsername( fullAddress.substring( 0, index ) );
-        setDomain( fullAddress.substring( index + 1 ) );
-
-        _isEmpty = false;
+        
     }
 
     //***************************************************************
     // Variables
     //***************************************************************
 
-    private String _username = "";
-    private String _domain = "";
-    private boolean _isEmpty = false;
+    private String _username;
+    private String _domain;
 }
 //EOF

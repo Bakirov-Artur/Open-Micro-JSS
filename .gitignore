@@ -32,3 +32,4 @@ hs_err_pid*
 conf/users
 conf/users/*
 conf/smtp
+conf/smtp/*

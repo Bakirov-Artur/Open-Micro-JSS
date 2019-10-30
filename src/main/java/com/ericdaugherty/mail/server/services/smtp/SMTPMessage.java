@@ -167,20 +167,20 @@ public class SMTPMessage implements Serializable {
      * @throws java.lang.Exception
      */
     public void moveToFailedFolder() throws Exception {
-        File failedDir = new File( configurationManager.getMailDirectory() + File.separator + "failed" );
+        File failedDir = new File( File.separator.join(configurationManager.getMailDirectory(), "failed") );
 
         // If the directory does not exist, create it.
         if( !failedDir.exists() ) {
-            logger.info( "failed directory does not exist.  Creating: " + failedDir.getAbsolutePath() );
+            logger.info( "failed directory does not exist.  Creating: {}", failedDir.getAbsolutePath() );
             if( !failedDir.mkdirs() )
             {
-                logger.error( "Error creating failed directory: " + failedDir.getAbsolutePath() + ".  No incoming mail will be accepted!" );
+                logger.error( "Error creating failed directory: {}.  No incoming mail will be accepted!", failedDir.getAbsolutePath());
                 throw new Exception( "Unable to create failed Directory." );
             }
         }
 
        File messageLocation = getMessageLocation();
-       String newLocation= configurationManager.getMailDirectory() + File.separator + "failed" + File.separator + messageLocation.getName();
+       String newLocation= File.separator.join(configurationManager.getMailDirectory(),"failed", messageLocation.getName());
        if( !messageLocation.renameTo( new File(newLocation ) ) )
        {
            logger.error( "moveToFailedFolder failed.  Message was not renamed." );
@@ -198,10 +198,10 @@ public class SMTPMessage implements Serializable {
 
         // If the directory does not exist, create it.
         if( !smtpDirectory.exists() ) {
-            logger.info( "SMTP Mail directory does not exist.  Creating: " + smtpDirectory.getAbsolutePath() );
+            logger.info( "SMTP Mail directory does not exist.  Creating: {}", smtpDirectory.getAbsolutePath() );
             if( !smtpDirectory.mkdirs() )
             {
-                logger.error( "Error creating SMTP Mail directory: " + smtpDirectory.getAbsolutePath() + ".  No incoming mail will be accepted!" );
+                logger.error( "Error creating SMTP Mail directory: {}.  No incoming mail will be accepted!", smtpDirectory.getAbsolutePath());
                 throw new Exception( "Unable to create SMTP Mail Directory." );
             }
         }
@@ -246,7 +246,7 @@ public class SMTPMessage implements Serializable {
             }
             catch( IOException e )
             {
-                logger.warn( "Unable to close spool file for SMTPMessage " + messageLocation.getAbsolutePath() );
+                logger.warn( "Unable to close spool file for SMTPMessage {}" + messageLocation.getAbsolutePath() );
             }
         }
     }
@@ -267,11 +267,11 @@ public class SMTPMessage implements Serializable {
         try
         {
             String version = reader.readLine();
-            if( logger.isDebugEnabled() ) logger.debug( "Loading SMTP Message " + messageFile.getName() + " version " + version );
+            if( logger.isDebugEnabled() ) logger.debug( "Loading SMTP Message {} version {}", messageFile.getName(), version );
             if( !FILE_VERSION.equals( version ) )
             {
-                logger.error( "Error loading SMTP Message.  Can not handle file version: " + version );
-                throw new IOException( "Invalid file version: " + version );
+                logger.error( "Error loading SMTP Message.  Can not handle file version: {}", version );
+                throw new IOException( "Invalid file version: ".concat(version) );
             }
             // Initialize a new message with the right file location
             SMTPMessage message = new SMTPMessage();
@@ -299,7 +299,7 @@ public class SMTPMessage implements Serializable {
         }
         catch( NumberFormatException numberFormatException )
         {
-            throw new IOException( "Unable to parse the data from the stored file into a number.  " + numberFormatException.toString() );
+            throw new IOException( String.format("Unable to parse the data from the stored file into a number.  %s", numberFormatException.toString()) );
         }
         finally
         {
@@ -360,7 +360,7 @@ public class SMTPMessage implements Serializable {
         }
         catch( InvalidAddressException invalidAddressException )
         {
-            logger.error( "Unable to parse to address read from database.  Full String is: " + addresses, invalidAddressException );
+            logger.error( "Unable to parse to address read from database.  Full String is: {}", addresses, invalidAddressException );
             throw new RuntimeException( "Error parsing address.  Message Delivery Failed." );
         }
     }

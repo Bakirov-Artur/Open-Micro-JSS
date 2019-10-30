@@ -66,13 +66,13 @@ public class ServiceListener implements Runnable {
     private ConnectionProcessor[] processors;
 
     /** The port to listen on for incoming connections. */
-    private int port;
+    private final int port;
 
     /** The type of class to use to handle requests. */
-    private Class connectionProcessorClass;
+    private final Class connectionProcessorClass;
 
     /** The number of threads to create to listen on this port */
-    private int threads;
+    private final int threads;
 
     /** Thread pool */
     private Thread[] threadPool = null;
@@ -89,6 +89,9 @@ public class ServiceListener implements Runnable {
 
     /**
      * Creates a new instance and stores the initial paramters.
+     * @param port
+     * @param connectionProcessorClass
+     * @param threads
      */
     public ServiceListener( int port, Class connectionProcessorClass, int threads ) {
 
@@ -104,9 +107,10 @@ public class ServiceListener implements Runnable {
      * Entry point for the thread.  Listens for incoming connections and
      * start a new handler thread for each.
      */
+    @Override
     public void run() {
 
-        if( logger.isDebugEnabled() ) logger.debug( "Starting ServiceListener on port: " + port );
+        if( logger.isDebugEnabled() ) logger.debug( "Starting ServiceListener on port: {}", port);
 
         InetAddress listenAddress = ConfigurationManager.getInstance().getListenAddress();
         try {
@@ -125,11 +129,11 @@ public class ServiceListener implements Runnable {
                 address = listenAddress.getHostAddress();
             }
 
-            logger.error("Could not create ServiceListener on address: " + address + " port: " + port + ".  No connections will be accepted on this port!" );
+            logger.error("Could not create ServiceListener on address: {} port: {}.  No connections will be accepted on this port!", address, port);
             return;
         }
 
-        logger.info( "Accepting Connections on port: " + port );
+        logger.info( "Accepting Connections on port: {}", port );
 
         ConnectionProcessor processor;
         long threadCount = 0;
@@ -155,7 +159,7 @@ public class ServiceListener implements Runnable {
         }
         catch (IllegalAccessException | InstantiationException e)
         {
-            logger.error("ServiceListener Connection failed on port: " + port + ".  Error: " + e );
+            logger.error("ServiceListener Connection failed on port: {}.  Error: {}", port, e );
         }
     }
 
@@ -186,7 +190,7 @@ public class ServiceListener implements Runnable {
         }
         catch(IOException e)
         {
-            logger.error( "Failed to  close server socket", e );
+            logger.error( "Failed to  close server socket {}", e );
         }
         serverSocket = null;
     }

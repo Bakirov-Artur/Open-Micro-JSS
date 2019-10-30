@@ -134,8 +134,7 @@ public class SMTPProcessor implements ConnectionProcessor {
 
                 InetAddress remoteAddress = socket.getInetAddress();
                 clientIp = remoteAddress.getHostAddress();
-
-				if( logger.isInfoEnabled() ) { logger.info( remoteAddress.getHostName() + "(" + clientIp + ") socket connected via SMTP." ); }
+                if( logger.isInfoEnabled() ) { logger.info("{}({}) socket connected via SMTP.", remoteAddress.getHostName(), clientIp ); }
 
                 write( WELCOME_MESSAGE );
 
@@ -222,18 +221,18 @@ public class SMTPProcessor implements ConnectionProcessor {
             argument = parseArgument( inputString );
 
             if( command.equals( COMMAND_HELO ) ) {
-                write( "250 Hello " + argument );
+                write( "250 Hello ".concat(argument) );
                 lastCommand = HELO;
             }
-			//NOOP - Do Nothing.
-			else if( command.equals( COMMAND_NOOP ) ) {
-				write( MESSAGE_OK );
-			}
-			//Resets the state of the server back to the initial
-			//state.
+            //NOOP - Do Nothing.
+            else if( command.equals( COMMAND_NOOP ) ) {
+                    write( MESSAGE_OK );
+            }
+            //Resets the state of the server back to the initial
+            //state.
             else if( command.equals( COMMAND_RSET ) ) {
-				message = new SMTPMessage();
-				write( MESSAGE_OK );
+                message = new SMTPMessage();
+                write( MESSAGE_OK );
                 lastCommand = RSET;
             }
             //Not only check the command, but the full string, since the prepare command
@@ -276,7 +275,7 @@ public class SMTPProcessor implements ConnectionProcessor {
                 }
             }
             else {
-                write( MESSAGE_INVALID_COMMAND + command );
+                write(MESSAGE_INVALID_COMMAND.concat(command));
             }
         }
     }
@@ -300,13 +299,13 @@ public class SMTPProcessor implements ConnectionProcessor {
             else {
                 EmailAddress address = new EmailAddress( fromAddress );
                 message.setFromAddress( address );
-                if( logger.isDebugEnabled() ) { logger.debug( "MAIL FROM: " + fromAddress ); }
+                if( logger.isDebugEnabled() ) { logger.debug( "MAIL FROM: {}", fromAddress ); }
             }
             write( MESSAGE_OK );
             return true;
         }
         catch( InvalidAddressException iae ) {
-            logger.debug( "Unable to parse From Address: " + fromAddress );
+            logger.debug( "Unable to parse From Address: {}", fromAddress );
             write( MESSAGE_USER_INVALID );
             return false;
         }
@@ -338,16 +337,16 @@ public class SMTPProcessor implements ConnectionProcessor {
                     message.addToAddress( address );
                 }
                 write( MESSAGE_OK );
-                if( logger.isDebugEnabled() ) { logger.debug( "RCTP TO: " + address.getAddress() + " accepted." ); }
+                if( logger.isDebugEnabled() ) { logger.debug( "RCTP TO: {} accepted.", address.getAddress()); }
             }
             else {
-                if( logger.isInfoEnabled() ) logger.info( "Invalid delivery address for incoming mail: " + toAddress + " from client: " + clientIp + " / " + message.getFromAddress() );
+                if( logger.isInfoEnabled() ) logger.info( "Invalid delivery address for incoming mail: {} from client: {} / {}", toAddress, clientIp, message.getFromAddress() );
                 throw new InvalidAddressException();
             }
         }
         catch( InvalidAddressException iae ) {
             write( MESSAGE_USER_NOT_LOCAL );
-            logger.debug( "RCTP TO: " + toAddress + " rejected." );
+            logger.debug( "RCTP TO: {} rejected.", toAddress );
         }
     }
 
@@ -362,22 +361,22 @@ public class SMTPProcessor implements ConnectionProcessor {
         write( MESSAGE_SEND_DATA );
 
         //Add a datestamp to the message to track when the message arrived.
-        message.addDataLine( "X-RecievedDate: " + new Date() );
+        message.addDataLine( "X-RecievedDate: ".concat(new Date().toString()) );
         //Add a line to the message to track that the message when through this server.
-        message.addDataLine( "Received: by EricDaugherty's JES SMTP " + configurationManager.getLocalDomains()[0] + " from client: " + clientIp  );
+        message.addDataLine( String.format("Received: SMTP Server %s from client: %s", configurationManager.getLocalDomains()[0], clientIp ) );
 
         try {
             String inputString = in.readLine();
 
             while( !inputString.equals( "." ) ) {
-                if( logger.isDebugEnabled() ) { logger.debug( "Read Data: " + inputString ); }
+                if( logger.isDebugEnabled() ) { logger.debug( "Read Data: {}", inputString ); }
                 message.addDataLine( inputString );
                 inputString = in.readLine();
 
                 // Check message size
                 if( message.getSize() > maxSize )
                 {
-                    logger.warn( "Message Rejected.  Message larger than max allowed size (" + configurationManager.getMaximumMessageSize() + " MB)" );
+                    logger.warn( "Message Rejected.  Message larger than max allowed size ({} MB)", configurationManager.getMaximumMessageSize());
                     write( MESSAGE_MESSAGE_TOO_LARGE );
                     throw new RuntimeException( "Aborting Connection.  Message size too large." );
                 }
@@ -400,7 +399,7 @@ public class SMTPProcessor implements ConnectionProcessor {
             throw new RuntimeException( se.getMessage() );
         }
 
-        if( logger.isInfoEnabled() ) logger.info( "Message " + message.getMessageLocation().getName() + " accepted for delivery." );
+        if( logger.isInfoEnabled() ) logger.info( "Message {} accepted for delivery.", message.getMessageLocation().getName());
     }
 
     /**
@@ -409,7 +408,7 @@ public class SMTPProcessor implements ConnectionProcessor {
     private String read() {
         try {
             String inputLine = in.readLine().trim();
-            if( logger.isDebugEnabled() ) { logger.debug( "Read Input: " + inputLine ); }
+            if( logger.isDebugEnabled() ) { logger.debug( "Read Input: {}", inputLine ); }
             return inputLine;
         }
         catch( IOException ioe ) {
@@ -422,9 +421,8 @@ public class SMTPProcessor implements ConnectionProcessor {
      * Writes the specified output message to the client.
      */
     private void write( String message ) {
-
-		if( logger.isDebugEnabled() ) { logger.debug( "Writing: " + message ); }
-        out.print( message + "\r\n" );
+        if( logger.isDebugEnabled() ) { logger.debug( "Writing: {}", message ); }
+        out.print( message.concat("\r\n"));
         out.flush();
     }
 
@@ -498,7 +496,7 @@ public class SMTPProcessor implements ConnectionProcessor {
 
     //Message Constants
     //General Message
-    private static final String WELCOME_MESSAGE = "220 Welcome to EricDaugherty's Java SMTP Server.";
+    private static final String WELCOME_MESSAGE = "220 Welcome to SMTP Server.";
     private static final String MESSAGE_DISCONNECT = "221 SMTP server signing off.";
     private static final String MESSAGE_OK = "250 OK";
     private static final String MESSAGE_COMMAND_ORDER_INVALID = "503 Command not allowed here.";

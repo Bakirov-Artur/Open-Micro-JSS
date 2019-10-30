@@ -61,7 +61,7 @@ public class ShutdownService implements Runnable {
             logger.warn( "Server shutdown complete." );
         }
         catch (Exception e) {
-            logger.error("Failed to terminate properly", e);
+            logger.error("Failed to terminate properly {}", e);
         }
     }
 }

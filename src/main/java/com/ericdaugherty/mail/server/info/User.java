@@ -110,9 +110,9 @@ public class User {
      */
     public boolean isPasswordValid( String plainTextPassword )
     {
-        if( logger.isDebugEnabled() ) logger.debug( "Authenticating User: " + getFullUsername() );
+        if( logger.isDebugEnabled() ) logger.debug( "Authenticating User: {}", getFullUsername() );
         boolean result = getPassword().equals( PasswordManager.encryptPassword( plainTextPassword ) );
-        if( logger.isDebugEnabled() && !result ) logger.debug( "Authentication Failed for User: " + getFullUsername() );
+        if( logger.isDebugEnabled() && !result ) logger.debug( "Authentication Failed for User: {}", getFullUsername() );
 
         return result;
     }
@@ -227,16 +227,16 @@ public class User {
     public File getUserDirectory() {
 
         String mailDirectory = configurationManager.getMailDirectory();
-        File directory = new File( mailDirectory + File.separator + "users" + File.separator + getFullUsername() );
+        File directory = new File(File.separator.join(mailDirectory, "users", getFullUsername()));
 
         if ( !directory.exists() ) { 
-            if( logger.isInfoEnabled() ) logger.info( "Directory for user: " + getFullUsername() + "does not exist, creating..." );
+            if( logger.isInfoEnabled() ) logger.info( "Directory for user: {} does not exist, creating...", getFullUsername());
             directory.mkdirs();
         }
 
         if( !directory.isDirectory() ) {
-            logger.error( "User Directory: " + directory.getAbsolutePath() + " for user: " + getFullUsername() + " does not exist." );
-            throw new RuntimeException( "User's Directory path: " + directory.getAbsolutePath() + " is not a directory!" );
+            logger.error( "User Directory: {} for user: {} does not exist.", directory.getAbsolutePath(), getFullUsername());
+            throw new RuntimeException( String.format("User's Directory path: %s is not a directory!", directory.getAbsolutePath()));
         }
         
         return directory;
@@ -258,8 +258,7 @@ public class User {
      * Converts a username and domaing to the combined username.
      */
     private static String getFullUsername( String username, String domain ) {
-
-        return username + "@" + domain;
+        return String.format("%s@%s", username, domain);
     }
 
     

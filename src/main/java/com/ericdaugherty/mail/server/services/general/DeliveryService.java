@@ -94,7 +94,7 @@ public class DeliveryService implements ConfigurationParameterContants {
     // Public Interface
 
     /**
-     * Accessor for the singleton instance for this class.
+     * accessory for the singleton instance for this class.
      * @return 
      */
     public static synchronized DeliveryService getDeliveryService(){
@@ -140,7 +140,7 @@ public class DeliveryService implements ConfigurationParameterContants {
      * @param clientIp
      */
     public void ipAuthenticated( String clientIp ) {
-        if( logger.isDebugEnabled() ) logger.debug( "Adding authenticated IP address: " + clientIp );
+        if( logger.isDebugEnabled() ) logger.debug( "Adding authenticated IP address: {}", clientIp );
         authenticatedIps.put( clientIp, new Date() );
     }
 
@@ -159,7 +159,7 @@ public class DeliveryService implements ConfigurationParameterContants {
      * @return 
      */
     public boolean isMailboxLocked( EmailAddress address ) {
-        if( logger.isDebugEnabled() ) logger.debug( "Locking Mailbox: " + address.getAddress() );
+        if( logger.isDebugEnabled() ) logger.debug( "Locking Mailbox: {}", address.getAddress() );
         return lockedMailboxes.containsKey( address.getAddress() );
     }
 
@@ -168,7 +168,7 @@ public class DeliveryService implements ConfigurationParameterContants {
      * @param address
      */
     public void unlockMailbox( EmailAddress address ) {
-        if( logger.isDebugEnabled() ) logger.debug( "Unlocking Mailbox: " + address.getAddress() );
+        if( logger.isDebugEnabled() ) logger.debug( "Unlocking Mailbox: {}", address.getAddress() );
         lockedMailboxes.remove( address.getAddress() );
     }
     
@@ -243,7 +243,7 @@ public class DeliveryService implements ConfigurationParameterContants {
                             }
                         }
                         catch (NoSuchElementException noSuchElementException) {
-                            logger.warn( "Invalid ApprovedAddress found: " + approvedAddress + ".  Skipping." );
+                            logger.warn( "Invalid ApprovedAddress found: {}.  Skipping.", approvedAddress);
                             isMatch = false;
                             break;
                         }

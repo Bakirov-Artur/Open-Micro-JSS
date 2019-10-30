@@ -57,10 +57,11 @@ public class DnsService {
 
     /**
      * This method returns an array of addresses that represent MX Entries
-     * for the specified domain.  If no MX entries were found for the
-     * specified domain, and empty array is returned.
+     * for the specified domain.If no MX entries were found for the specified domain, and empty array is returned.
      * 
      * @param domain the domain perform the MX Lookup on.
+     * @return 
+     * @throws org.xbill.DNS.TextParseException
      */
     public static String[] getMXEntries( String domain ) throws TextParseException {
         

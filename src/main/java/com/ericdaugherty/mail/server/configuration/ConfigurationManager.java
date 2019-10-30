@@ -204,14 +204,14 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         File generalConfigFile = new File( configurationDirectory, generalConfigFilename );
         if( !generalConfigFile.exists() || !generalConfigFile.isFile() )
         {
-            throw new RuntimeException( "Invalid mail.conf ConfigurationFile! " + generalConfigFile.getAbsolutePath() );
+            throw new RuntimeException( "Invalid mail.conf ConfigurationFile! ".concat(generalConfigFile.getAbsolutePath()) );
         }
 
         // Verify the User config file exists.
         File userConfigFile = new File( configurationDirectory, userConfigFilename );
         if( !userConfigFile.exists() || !userConfigFile.isFile() )
         {
-            throw new RuntimeException( "Invalid user.conf ConfigurationFile! " + userConfigFile.getAbsolutePath() );
+            throw new RuntimeException( "Invalid user.conf ConfigurationFile! ".concat(userConfigFile.getAbsolutePath()) );
         }
 
         // Go ahead and create the singleton instance.
@@ -404,7 +404,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
     public User getUser( EmailAddress address )
     {
         User user = (User) users.get( address.getAddress() );
-        if( logger.isInfoEnabled() && user == null ) logger.info( "Tried to load non-existent user: " +  address.getAddress() );
+        if( logger.isInfoEnabled() && user == null ) logger.info( "Tried to load non-existent user: {}", address.getAddress() );
 
         return user;
     }
@@ -544,7 +544,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
 
         String domains = properties.getProperty( DOMAINS, "" );
         localDomains = tokenize( domains.trim().toLowerCase() );
-        logger.info( "Loaded " + localDomains.length + " local domains." );
+        logger.info( "Loaded {}  local domains.",localDomains.length);
         if( domains.length() == 0 )
         {
             throw new RuntimeException( "No Local Domains defined!  Can not run without local domains defined." );
@@ -560,7 +560,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
             executeThreadCount = Integer.parseInt( threadsString );
         }
         catch( NumberFormatException nfe ) {
-            logger.warn( "Invalid value for property: " + EXECUTE_THREADS + ".  Using default value of 5.");
+            logger.warn( "Invalid value for property: {}.  Using default value of 5.", EXECUTE_THREADS);
             executeThreadCount = 5;
         }
 
@@ -569,7 +569,6 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         //
 
         String listenAddressString = properties.getProperty( LISTEN_ADDRESS, "" );
-        listenAddressString.trim();
         // If not address is specified, default to null.  ServiceListener can handle
         // a null listenAddress.
         if( listenAddressString.length() > 0 )
@@ -578,7 +577,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
                 listenAddress = InetAddress.getByName( listenAddressString );
             }
             catch ( UnknownHostException unknownHostException ) {
-                throw new RuntimeException( "Invalid value for property: " + LISTEN_ADDRESS + ".  Server will listen on all addresses.  " + unknownHostException );
+                throw new RuntimeException( String.format("Invalid value for property: %s.  Server will listen on all addresses. %s", LISTEN_ADDRESS , unknownHostException) );
             }
         }
         else
@@ -603,7 +602,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
             setAuthenticationTimeoutMinutes( Long.parseLong( timoutString ) );
         }
         catch( NumberFormatException nfe ) {
-            logger.warn( "Invalid value for property: " + RELAY_POP_BEFORE_SMTP_TIMEOUT + ". Defaulting to 10." );
+            logger.warn( "Invalid value for property: {}. Defaulting to 10.", RELAY_POP_BEFORE_SMTP_TIMEOUT);
             //Set the default to 10 minutes.
             setAuthenticationTimeoutMinutes( 10 );
         }
@@ -671,7 +670,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
                 defaultUserEnabled = true;
             }
             catch (InvalidAddressException e) {
-                throw new RuntimeException( "Invalid address for default user: " + defaultUserString );
+                throw new RuntimeException("Invalid address for default user: ".concat(defaultUserString));
             }
         }
         else
@@ -696,7 +695,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         }
         catch( NumberFormatException numberFormatException )
         {
-            logger.warn( "Invalid value for property: " + SMTP_DELIVERY_THRESHOLD + ". Defaulting to 10." );
+            logger.warn( "Invalid value for property: {}. Defaulting to 10.", SMTP_DELIVERY_THRESHOLD);
             deliveryAttemptThreshold = 10;
         }
 
@@ -707,7 +706,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         }
         catch( NumberFormatException numberFormatException )
         {
-            logger.warn( "Invalid value for property: " + SMTP_MAX_MESSAGE_SIZE + ". Defaulting to 5." );
+            logger.warn( "Invalid value for property: {}. Defaulting to 5.", SMTP_MAX_MESSAGE_SIZE);
             deliveryAttemptThreshold = 5;
         }
 
@@ -754,13 +753,13 @@ public class ConfigurationManager implements ConfigurationParameterContants {
                     usersMap.put( correctedUsername, loadUser( fullUsername, properties ) );
                 }
                 catch (InvalidAddressException e) {
-                    logger.warn( "Skipping user: " + fullUsername + ".  Address is invalid." );
+                    logger.warn( "Skipping user: {}.  Address is invalid.", fullUsername);
                 }
             }
         }
         this.users = usersMap;
 
-        if( logger.isInfoEnabled() ) logger.info( "Loaded " + usersMap.size() + " users from user.conf" );
+        if( logger.isInfoEnabled() ) logger.info( "Loaded {} users from user.conf", usersMap.size());
 
         // Save the user configuration if they changed.
         if( userConfModified ) {
@@ -816,7 +815,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
                 value = Integer.parseInt( stringValue );
             }
             catch (NumberFormatException e) {
-                logger.warn( "Error parsing port string: " + stringValue + " using default value: " + defaultValue );
+                logger.warn( "Error parsing port string: {} using default value: {}", stringValue, defaultValue );
             }
         }
         return value;
@@ -842,8 +841,8 @@ public class ConfigurationManager implements ConfigurationParameterContants {
             password = PasswordManager.encryptPassword( password );
             properties.setProperty( USER_DEF_PREFIX + fullAddress, password );
             if( password == null ) {
-                logger.error( "Error encrypting plaintext password from user.conf for user " + fullAddress );
-                throw new RuntimeException( "Error encrypting password for user: " + fullAddress );
+                logger.error("Error encrypting plaintext password from user.conf for user {}", fullAddress );
+                throw new RuntimeException("Error encrypting password for user: ".concat(fullAddress));
             }
             userConfModified = true;
         }
@@ -856,21 +855,23 @@ public class ConfigurationManager implements ConfigurationParameterContants {
         {
             forwardAddresses = tokenize( forwardAddressesString );
         }
-        ArrayList addressList = new ArrayList( forwardAddresses.length );
-        for (String forwardAddresse : forwardAddresses) {
-            try {
-                addressList.add(new EmailAddress(forwardAddresse));
-            } catch (InvalidAddressException e) {
-                logger.warn("Forward address: " + forwardAddresse + " for user " + user.getFullUsername() + " is invalid and will be ignored.");
+        if(forwardAddresses.length > 0)
+            {ArrayList addressList = new ArrayList( forwardAddresses.length );
+            for (String forwardAddresse : forwardAddresses) {
+                try {
+                    addressList.add(new EmailAddress(forwardAddresse));
+                } catch (InvalidAddressException e) {
+                    logger.warn("Forward address: {} for user {} is invalid and will be ignored.", forwardAddresse, user.getFullUsername());
+                }
+            }
+            EmailAddress[] emailAddresses = new EmailAddress[ addressList.size() ];
+            emailAddresses = (EmailAddress[]) addressList.toArray( emailAddresses );
+            if (emailAddresses.length > 0){
+                if( logger.isDebugEnabled() ) logger.debug(  "{} forward addresses load for user: {}", emailAddresses.length, user.getFullUsername() );
+                user.setForwardAddresses( emailAddresses );
             }
         }
-
-        EmailAddress[] emailAddresses = new EmailAddress[ addressList.size() ];
-        emailAddresses = (EmailAddress[]) addressList.toArray( emailAddresses );
-
-        if( logger.isDebugEnabled() ) logger.debug( emailAddresses.length + " forward addresses load for user: " + user.getFullUsername() );
-        user.setForwardAddresses( emailAddresses );
-
+        
         return user;
     }
 
@@ -912,7 +913,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
                     }
                 }
                 catch( InterruptedException throwable ) {
-                    logger.error( "Error in ConfigurationWatcher thread.  Thread will continue to execute. " + throwable, throwable );
+                    logger.error( "Error in ConfigurationWatcher thread.  Thread will continue to execute. {}", throwable);
                 }
             }
         }
@@ -921,7 +922,7 @@ public class ConfigurationManager implements ConfigurationParameterContants {
     private static final String LF = "\r\n";
 
     private static final String USER_PROPERTIES_HEADER =
-        "# Java Email Server (JES) User Configuration" + LF +
+        "# User Configuration" + LF +
         "#" + LF +
         "# All users are defined in this file.  To add a user, follow" + LF +
         "# the following pattern:" + LF +

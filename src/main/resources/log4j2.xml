@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--config see https://logging.apache.org/log4j/2.x/manual/configuration.html#XML-->
-<Configuration status="INFO" monitorInterval="30">
+<Configuration status="DEBUG" monitorInterval="30">
     <Appenders>
         <Console name="console" target="SYSTEM_OUT">
             <PatternLayout
@@ -10,7 +10,7 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Root level="info" additivity="false">
+        <Root level="DEBUG" additivity="false">
             <AppenderRef ref="console" />
         </Root>
     </Loggers>

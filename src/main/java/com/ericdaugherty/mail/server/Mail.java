@@ -100,7 +100,7 @@ public class Mail {
      */
     public static void shutdown() {
 
-        logger.warn( "Shutting down Mail Server.  Server will shut down in 60 seconds." );
+        logger.warn( "Shutting down Mail Server. Server will shut down in 60 seconds." );
 
         popListener.shutdown();
         smtpListener.shutdown();
@@ -145,13 +145,13 @@ public class Mail {
 
             //Start the Pop3 Thread.
             port = configurationManager.getPop3Port();
-            if(logger.isDebugEnabled() ) logger.debug( "Starting POP3 Service on port: " + port );
+            if(logger.isDebugEnabled() ) logger.debug("Starting POP3 Service on port: {}", port);
             popListener = new ServiceListener( port, Pop3Processor.class, executeThreads );
             new Thread( popListener, "POP3" ).start();
 
             //Start SMTP Threads.
             port = configurationManager.getSmtpPort();
-            if( logger.isDebugEnabled() ) logger.debug( "Starting SMTP Service on port: " + port );
+            if( logger.isDebugEnabled() ) logger.debug( "Starting SMTP Service on port: {}", port);
             smtpListener = new ServiceListener( port, SMTPProcessor.class, executeThreads );
             new Thread( smtpListener, "SMTP" ).start();
 
@@ -195,11 +195,11 @@ public class Mail {
         }
         // Otherwise, use the default, which is 'mail.conf' in the current directory.
         else if( (directoryFile = new File( directory )).exists() ) {
-            System.out.println( "Configuration Directory not specified.  Using \"" + directoryFile.getAbsolutePath() + "\"" );
+            logger.info( "Configuration Directory not specified.  Using \"{}\"", directoryFile.getAbsolutePath());
         }
         // If no file was specified and the default does not exist, printing out a usage line.
         else {
-            System.out.println("Usage:  java com.ericdaugherty.mail.server.Mail <configuration directory>");
+            logger.error("Usage:  java com.ericdaugherty.mail.server.Mail <configuration directory>");
             throw new RuntimeException( "Unable to load the configuration file." );
         }
 

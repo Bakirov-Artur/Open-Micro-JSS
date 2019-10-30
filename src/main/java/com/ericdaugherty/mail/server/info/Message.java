@@ -74,16 +74,16 @@ public class Message {
 
     public boolean isDeleted(){ return deleted; }
 
-    public void setDeleted(boolean deleted){ logger.debug( "Setting is deleted to: " + deleted ); this.deleted = deleted; }
+    public void setDeleted(boolean deleted){ logger.debug( "Setting is deleted to: {}", deleted ); this.deleted = deleted; }
 	
-	public String getUniqueId() { 
-		String location = messageLocation.getAbsolutePath();
-		
-		int begin = location.lastIndexOf( "pop" ) + 3;
-		int end = location.lastIndexOf( ".jmsg" );
-		
-		return location.substring( begin, end );
-	}
+    public String getUniqueId() { 
+            String location = messageLocation.getAbsolutePath();
+
+            int begin = location.lastIndexOf( "pop" ) + 3;
+            int end = location.lastIndexOf( ".jmsg" );
+
+            return location.substring( begin, end );
+    }
 
 }
 //EOF

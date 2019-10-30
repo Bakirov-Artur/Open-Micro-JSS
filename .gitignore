@@ -31,3 +31,4 @@ hs_err_pid*
 *.jmsg
 conf/users
 conf/users/*
+conf/smtp

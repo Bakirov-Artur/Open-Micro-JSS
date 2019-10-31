@@ -44,6 +44,7 @@ import org.apache.logging.log4j.LogManager;
 //Local imports
 import com.ericdaugherty.mail.server.configuration.ConfigurationManager;
 import com.ericdaugherty.mail.server.configuration.PasswordManager;
+import java.nio.file.Paths;
 
 /**
  * Represents a user object.  This class is responsible for providing all
@@ -227,7 +228,8 @@ public class User {
     public File getUserDirectory() {
 
         String mailDirectory = configurationManager.getMailDirectory();
-        File directory = new File(File.separator.join(mailDirectory, "users", getFullUsername()));
+        
+        File directory = new File(Paths.get(mailDirectory, "users", getFullUsername()).toString());
 
         if ( !directory.exists() ) { 
             if( logger.isInfoEnabled() ) logger.info( "Directory for user: {} does not exist, creating...", getFullUsername());
@@ -258,10 +260,9 @@ public class User {
      * Converts a username and domaing to the combined username.
      */
     private static String getFullUsername( String username, String domain ) {
-        return String.format("%s@%s", username, domain);
+        return new StringBuilder()
+                .append(username)
+                .append("@")
+                .append(domain).toString();
     }
-
-    
-
-
 }

@@ -35,7 +35,6 @@
 package com.ericdaugherty.mail.server.services.smtp;
 
 //Java imports
-import java.io.*;
 import java.util.Date;
 import java.util.List;
 
@@ -49,6 +48,19 @@ import com.ericdaugherty.mail.server.info.EmailAddress;
 import com.ericdaugherty.mail.server.errors.NotFoundException;
 import com.ericdaugherty.mail.server.services.general.DeliveryService;
 import com.ericdaugherty.mail.server.configuration.ConfigurationManager;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
+import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.util.ArrayList;
 
 /**
@@ -71,7 +83,11 @@ public class SMTPSender implements Runnable {
     private static final ConfigurationManager configurationManager = ConfigurationManager.getInstance();
 
     private boolean running = true;
-
+    private static final Path SMTP_DIRECTORY = Paths.get(configurationManager.getMailDirectory(), "smtp" );
+    private static WatchService watcher;
+    private static WatchKey watchKey;
+//    private static final File SMTP_DIRECTORY = new File(Path.of(configurationManager.getMailDirectory(), "smtp" ).toString());
+    
     //***************************************************************
     // Public Interface
     //***************************************************************
@@ -82,58 +98,41 @@ public class SMTPSender implements Runnable {
      */
     @Override
     public void run() {
-
+        try {
+            watcher = FileSystems.getDefault().newWatchService();
+            //  SMTP DIRECTORY change notification
+            SMTP_DIRECTORY.register(watcher, ENTRY_CREATE);
+        } catch (IOException ex) {
+            logger.error("FileSystems watcher: ",ex);
+        }
+        
         while( running ) {
-
             try {
+                try {
+                    watchKey = watcher.take();
+                } catch (InterruptedException ex) {
+                    return;
+                }
+                for (WatchEvent<?> event : watchKey.pollEvents()) {
+                    // get event type
+                    WatchEvent.Kind<?> kind = event.kind();
 
-                logger.debug( "Checking for SMTP messages to deliver" );
-
-                File smtpDirectory = new File( configurationManager.getMailDirectory() + File.separator + "smtp" );
-
-                if( smtpDirectory.exists() && smtpDirectory.isDirectory() ) {
-
-                    File[] files = smtpDirectory.listFiles();
-                    int numFiles = files.length;
-
-                    for( int index = 0; index < numFiles; index++ ) {
-                        try {
-                            deliver( SMTPMessage.load( files[index].getAbsolutePath() ) );
-                        }
-                        catch( Throwable throwable ) {
-                            logger.error( "An error occured attempting to deliver an SMTP Message: " + throwable, throwable );
-                            //Do nothing else, contine on to the next message.
-                        }
+                    // get file name
+                    @SuppressWarnings("unchecked")
+                    WatchEvent<Path> ev = (WatchEvent<Path>) event;
+                    Path fileName = ev.context();
+                    if (kind == ENTRY_CREATE){
+                        String sendFileAbsolutePath = Paths.get(SMTP_DIRECTORY.toAbsolutePath().toString(), fileName.toString()).toString();
+                        logger.info("Delivery file: {}", sendFileAbsolutePath);
+                        deliver( SMTPMessage.load(sendFileAbsolutePath));
                     }
                 }
-
-                //Rest the specified sleep time.  If it is greater than 10 seconds
-                //Wake up every 10 seconds to check to see if the thread is shutting
-                //down.
-                long sleepTime = configurationManager.getDeliveryIntervealMilliseconds();
-                if( configurationManager.getDeliveryIntervealMilliseconds() < 10000 ) {
-                    Thread.sleep( sleepTime );
-                }
-                else {
-                    long totalSleepTime = sleepTime;
-                    while( totalSleepTime > 0 && running ) {
-                        if( totalSleepTime > 10000 ) {
-                            totalSleepTime -= 10000;
-                            Thread.sleep( 10000);
-                        }
-                        else {
-                            Thread.sleep( totalSleepTime );
-                            totalSleepTime = 0;
-                        }
-                    }
-                }
-            }
-            catch( InterruptedException ie ) {
-                logger.error( "Sleeping Thread was interrupted." );
+                // IMPORTANT: The key must be reset after processed
+                logger.error( "The key must be reset after processed: {}", watchKey.reset());
             }
             catch( Throwable throwable )
             {
-                logger.error( "An error occured attempting to deliver an SMTP Message: " + throwable, throwable );
+                logger.error( "An error occured attempting to deliver an SMTP Message: ", throwable );
             }
         }
         logger.warn( "SMTPSender shut down gracefully.");
@@ -274,7 +273,7 @@ public class SMTPSender implements Runnable {
      * This method takes a local SMTPMessage and attempts to deliver it.
      */
     private void deliverLocalMessage( EmailAddress address, SMTPMessage message )
-        throws NotFoundException {
+        throws NotFoundException, IOException {
 
         if( logger.isDebugEnabled() ) { logger.debug( "Delivering Message to local user: " + address.getAddress() ); }
         //Load the user.  If the user doesn't exist, a not found exception will

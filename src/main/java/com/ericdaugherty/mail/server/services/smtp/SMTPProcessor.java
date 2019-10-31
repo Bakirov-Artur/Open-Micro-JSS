@@ -509,6 +509,7 @@ public class SMTPProcessor implements ConnectionProcessor {
 
     //Commands
     private static final String COMMAND_HELO = "HELO";
+//    private static final String COMMAND_EHLO = "EHLO";
     private static final String COMMAND_RSET = "RSET";
     private static final String COMMAND_NOOP = "NOOP";
     private static final String COMMAND_QUIT = "QUIT";

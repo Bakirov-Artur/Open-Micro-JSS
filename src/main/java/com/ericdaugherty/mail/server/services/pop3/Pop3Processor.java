@@ -358,7 +358,7 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
                 handleDele( argument );
             }
             else if( command.equals( COMMAND_NOOP ) ) {
-                write( "+OK" );
+                write( MESSAGE_OK );
             }
             else if( command.equals( COMMAND_RSET ) ) {
                 handleRset();
@@ -738,9 +738,11 @@ public class Pop3Processor extends Thread implements ConnectionProcessor {
 
     //Message Constants
     //General Message
+    private static final String MESSAGE_OK = "+OK";
     private static final String WELCOME_MESSAGE = "+OK Pop Server Ready";
     private static final String MESSAGE_DISCONNECT = "+OK Pop server signing off.";
-    private static final String MESSAGE_OK = "+OK";
+    
+//    private static final String MESSAGE_ERROR = "-ERR";
     private static final String MESSAGE_INVALID_COMMAND = "-ERR Unknown command: ";
     private static final String MESSAGE_TOO_FEW_ARGUMENTS = "-ERR Too few arguments for this command.";
 

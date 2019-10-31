@@ -72,6 +72,10 @@ public class DefaultSmtpServer {
 
     @Override
     public String toString() {
-        return String.format("%s:%d", host, port);
+        return new StringBuilder()
+                .append(host)
+                .append(":")
+                .append(port)
+                .toString();
     }
 }
